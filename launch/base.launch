@@ -1,6 +1,51 @@
 <launch>
+    <arg name="WHEEL_NUM" doc="WHEEL_NUM"/>
+    <arg name="WHEEL_RADIUS" doc="WHEEL_RADIUS"/>
+    <arg name="WHEEL_LENGTH" doc="WHEEL_LENGTH"/>
+    <arg name="WHEEL_WIDTH" doc="WHEEL_WIDTH"/>
+    <arg name="GEAR_RATIO" doc="GEAR_RATIO"/>
+    <arg name="MOTOR_TICK" doc="MOTOR_TICK"/>
+    <arg name="WHEEL_MAX_RPM" doc="WHEEL_MAX_RPM"/>
+    <arg name="MOTOR_CALIBRATION" doc="MOTOR_CALIBRATION"/>
+    <arg name="whisper_en" default="0" doc="whisper_en"/>
     <arg name="message_display" default="screen" doc="output type"/>
+    <arg name="timeout_sec" default="0.3" doc="timeout"/>
+    <arg name="main_hz" default="1000" doc="main loop herz"/>
+    <arg name="communication" default="rs485" doc="communication"/>
+    <!-- <arg name="encoder_error" default="100000" doc="encoder_error"/> -->
+    <arg name="encoder_error" default="0" doc="encoder_error"/>
+    <arg name="serial_port" default="/dev/recipe.driver.md1k.all" doc="serial_port"/>
+    <arg name="baudrate" default="115200" doc="baudrate"/>
+    <arg name="inv_motor_in_arr" default="[1.0, 1.0, 1.0, 1.0]" doc="inv_motor_in_arr"/>
+    <arg name="inv_encoder_out_arr" default="[1.0, 1.0, 1.0, 1.0]" doc="inv_encoder_out_arr"/>
+
+    <arg name="record_encoder_error" default="true"/>
+    <arg name="bag_dir" default="$(find outtrigger)/bags/"/>
     
     <node pkg="outtrigger" type="outtrigger" name="outtrigger" output="$(arg message_display)">
+        <param name = "serial_port"      value = "$(arg serial_port)"/>
+        <param name = "baudrate"         value = "$(arg baudrate)"/>
+        <param name = "PC"               value = "172"/>
+        <param name = "MDUI"             value = "184"/>
+        <param name = "MDT"              value = "183"/>
+        <param name = "RMID"             value = "183"/>
+        <param name = "slowstart"        value = "300"/>
+        <param name = "slowdown"         value = "300"/>
+
+        <param name="WHEEL_NUM" value="$(arg WHEEL_NUM)"/>
+        <param name="WHEEL_RADIUS" value="$(arg WHEEL_RADIUS)"/>
+        <param name="WHEEL_LENGTH" value="$(arg WHEEL_LENGTH)"/>
+        <param name="WHEEL_WIDTH" value="$(arg WHEEL_WIDTH)"/>
+        <param name="GEAR_RATIO" value="$(arg GEAR_RATIO)"/>
+        <param name="MOTOR_TICK" value="$(arg MOTOR_TICK)"/>
+        <param name="WHEEL_MAX_RPM" value="$(arg WHEEL_MAX_RPM)"/>
+        <param name="MOTOR_CALIBRATION" value="$(arg MOTOR_CALIBRATION)"/>
+        <param name="whisper_en" value="$(arg whisper_en)"/>
+        <param name="timeout_sec" value="$(arg timeout_sec)"/>
+        <param name="main_hz" value="$(arg main_hz)"/>
+        <param name="communication" value="$(arg communication)"/>
+        <param name="encoder_error" value="$(arg encoder_error)"/>
+        <rosparam param="inv_motor_in_arr" subst_value="true">$(arg inv_motor_in_arr)</rosparam>
+        <rosparam param="inv_encoder_out_arr" subst_value="true">$(arg inv_encoder_out_arr)</rosparam>
     </node>
 </launch>
