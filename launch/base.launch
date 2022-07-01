@@ -1,0 +1,6 @@
+<launch>
+    <arg name="message_display" default="screen" doc="output type"/>
+    
+    <node pkg="outtrigger" type="outtrigger" name="outtrigger" output="$(arg message_display)">
+    </node>
+</launch>
