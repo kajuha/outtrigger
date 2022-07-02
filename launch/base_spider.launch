@@ -1,0 +1,21 @@
+<launch>
+    <arg name="MOTOR_NUM" value="4"/>
+    <arg name="message_display" default="screen" doc="output type"/>
+    <arg name="main_hz" default="1000" doc="main loop herz"/>
+    <arg name="communication" default="rs485" doc="communication"/>
+    <arg name="serial_port" default="/dev/ttyUSB0" doc="serial_port"/>
+    <arg name="baudrate" default="19200" doc="baudrate"/>
+    <arg name="inv_motor_in_arr" default="[1.0, 1.0, 1.0, 1.0]" doc="inv_motor_in_arr"/>
+    <arg name="inv_encoder_out_arr" default="[1.0, 1.0, 1.0, 1.0]" doc="inv_encoder_out_arr"/>
+    
+    <include file="$(find outtrigger)/launch/base.launch">
+        <arg name="MOTOR_NUM" value="$(arg MOTOR_NUM)"/>
+        <arg name="message_display" value="$(arg message_display)"/>
+        <arg name="main_hz" value="$(arg main_hz)"/>
+        <arg name="communication" value="$(arg communication)"/>
+        <arg name="serial_port" value="$(arg serial_port)"/>
+        <arg name="baudrate" value="$(arg baudrate)"/>
+        <arg name="inv_motor_in_arr" value="$(arg inv_motor_in_arr)"/>
+        <arg name="inv_encoder_out_arr" value="$(arg inv_encoder_out_arr)"/>
+    </include>
+</launch>

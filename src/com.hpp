@@ -5,22 +5,25 @@
 
 #define MD_SEND_RPM         0
 #define MD_SET_POS          1
+#define MD_REQ_PID          2
 
 #define ID_BLDC_CTRL        1
 #define ID_MDUI             2
 #define ID_ALL              0xfe
 
-// #define PID_REQ_PID_DATA    4    // DEPRECATED
+#define PID_VER             1
+#define PID_REQ_PID_DATA    4
 // #define PID_COMMAND         10   // DEPRECATED
 #define PID_POSI_RESET      13
 // #define PID_BAUDRATE        135  // DEPRECATED
 // #define PID_VOLT_IN         143  // DEPRECATED
-// #define PID_SLOW_START      153  // DEPRECATED
-// #define PID_SLOW_DOWN       154  // DEPRECATED
+#define PID_SLOW_START      153
+#define PID_SLOW_DOWN       154
 // #define PID_PNT_TQ_OFF      174  // DEPRECATED
 // #define PID_PNT_BRAKE       175  // DEPRECATED
 #define PID_PNT_VEL_CMD     207
 #define PID_MAIN_DATA       193
+#define PID_IO_MONITOR      194
 // #define PID_PNT_MAIN_DATA   210  // DEPRECATED
 #define PID_POSI_SET        217
 // #define PID_ROBOT_PARAM     247  // DEPRECATED
@@ -106,32 +109,50 @@ class Communication {
     std::vector<BYTE> kaType;
     std::vector<short> kaRefSpeed;
     std::vector<WORD> kaCtrlOutput;
-    std::vector<BYTE> kaStatus;
+    std::vector<BYTE> kaStatus1;
     std::vector<int> kaPosition;
     std::vector<BYTE> kaBrake;
     std::vector<BYTE> kaTemp;
     std::vector<ros::Time> kaTsLast;
-    std::vector<int> kaSet;
     std::vector<int> kaSetPosition;
+    std::vector<BYTE> kaStatus2;
+    std::vector<BYTE> kaCtrlInput;
+    std::vector<BYTE> ka8PinDip;
+    std::vector<BYTE> kaHallsensor;
+    std::vector<WORD> kaExtVolume;
+    std::vector<BYTE> kaSwInput;
+    std::vector<WORD> kaMainVol;
+    std::vector<BYTE> kaSlowStart;
+    std::vector<BYTE> kaSlowDown;
+    std::vector<BYTE> kaIntVolume;
     string kaCom;
 
     public:
     Communication() {
     }
 
-    Communication(int wheel_num) : byPacketNum(0) {
-        kaSpeed = std::vector<short>(wheel_num);
-        kaCurrent = std::vector<WORD>(wheel_num);
-        kaType = std::vector<BYTE>(wheel_num);
-        kaRefSpeed = std::vector<short>(wheel_num);
-        kaCtrlOutput = std::vector<WORD>(wheel_num);
-        kaStatus = std::vector<BYTE>(wheel_num);
-        kaPosition = std::vector<int>(wheel_num);
-        kaBrake = std::vector<BYTE>(wheel_num);
-        kaTemp = std::vector<BYTE>(wheel_num);
-        kaTsLast = std::vector<ros::Time>(wheel_num);
-        kaSet = std::vector<int>(wheel_num);
-        kaSetPosition = std::vector<int>(wheel_num);
+    Communication(int motor_num) : byPacketNum(0) {
+        kaSpeed = std::vector<short>(motor_num);
+        kaCurrent = std::vector<WORD>(motor_num);
+        kaType = std::vector<BYTE>(motor_num);
+        kaRefSpeed = std::vector<short>(motor_num);
+        kaCtrlOutput = std::vector<WORD>(motor_num);
+        kaStatus1 = std::vector<BYTE>(motor_num);
+        kaPosition = std::vector<int>(motor_num);
+        kaBrake = std::vector<BYTE>(motor_num);
+        kaTemp = std::vector<BYTE>(motor_num);
+        kaTsLast = std::vector<ros::Time>(motor_num);
+        kaSetPosition = std::vector<int>(motor_num);
+        kaStatus2 = std::vector<BYTE>(motor_num);
+        kaCtrlInput = std::vector<BYTE>(motor_num);
+        ka8PinDip = std::vector<BYTE>(motor_num);
+        kaHallsensor = std::vector<BYTE>(motor_num);
+        kaExtVolume = std::vector<WORD>(motor_num);
+        kaSwInput = std::vector<BYTE>(motor_num);
+        kaMainVol = std::vector<WORD>(motor_num);
+        kaSlowStart = std::vector<BYTE>(motor_num);
+        kaSlowDown = std::vector<BYTE>(motor_num);
+        kaIntVolume = std::vector<BYTE>(motor_num);
     }
 
     ~Communication() {
@@ -149,11 +170,7 @@ typedef struct _ComData {
     int id;
     int rpm;
     int position;
-    // int nArray0; // DEPRECATED
-    // int nArray1; // DEPRECATED
-    // int nArray2; // DEPRECATED
-    // int nArray3; // DEPRECATED
-    // int nArray4; // DEPRECATED
+    int nArray[5];
 } ComData;
 
 extern IByte Short2Byte(short sIn);
@@ -164,12 +181,7 @@ extern int MovingAverage(void);
 extern int InitSerial(void);
 // extern int InitSetSlowStart(void);   // DEPRECATED
 // extern int InitSetSlowDown(void);    // DEPRECATED
-#if 0
-// DEPRECATED
-extern int PutMdData(BYTE byPID, BYTE byMID, int nArray[], ComData comData);
-#else
 extern int PutMdData(BYTE byPID, BYTE byMID, ComData comData);
-#endif
 extern int MdReceiveProc(void);
 extern int ReceiveDataFromController(void);
 extern int AnalyzeReceivedData(BYTE byArray[], BYTE byBufNum);

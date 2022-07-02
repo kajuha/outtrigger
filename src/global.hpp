@@ -17,7 +17,11 @@
 
 using namespace std;
 
-#define MD1K_ID_OFFSET  21
+#if 0
+#define ID_OFFSET  21
+#else
+#define ID_OFFSET  1
+#endif
 
 #define LEFT           	  0      // Swing direction
 #define _L		  LEFT
