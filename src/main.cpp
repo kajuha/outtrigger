@@ -50,6 +50,10 @@ void sendMsgMd1k(int* send_rate) {
                     PutMdData(PID_POSI_SET, Com.nRMID, comData);
                 } else if (comData.type == MD_REQ_PID) {
                     PutMdData(PID_REQ_PID_DATA, Com.nRMID, comData);
+                } else if (comData.type == MD_OFF) {
+                    break;
+                } else if (comData.type == MD_CMD_PID) {
+                    PutMdData(comData.pid, Com.nRMID, comData);
                 } else {
                     printf("Unknown ComData.type : %d\n", comData.type);
                 }
@@ -144,7 +148,7 @@ int main(int argc, char** argv)
     double Motor_rpm[4];
     double motor_in_rpm[4];
 
-    unsigned int count = 0;
+    unsigned int cntOffSec = 0;
 
     int send_rate = 200;
   
@@ -215,19 +219,121 @@ int main(int argc, char** argv)
             #else
             // 시험
             #if 0
+            // VERSION 확인
             comData.type = MD_REQ_PID;
             comData.id = 1;
             comData.nArray[0] = PID_VER;
             qarr.push(comData);
+            cntOffSec++;
             #endif
             
-            #if 1
+            #if 0
+            // 전기적 브레이크 정지(전기적 브레이크 정지)
+            comData.type = MD_CMD_PID;
+            comData.id = 1;
+            comData.pid = PID_BRAKE;
+            comData.nArray[0] = 0;
+            qarr.push(comData);
+            cntOffSec++;
+            #endif
+            
+            #if 0
+            // PID_IN_POSITION_OK 확인
+            comData.type = MD_CMD_PID;
+            comData.id = 1;
+            comData.pid = PID_REQ_PID_DATA;
+            comData.nArray[0] = PID_IN_POSITION_OK;
+            qarr.push(comData);
+            cntOffSec++;
+            #endif
+            
+            #if 0
+            // PID_PNT_VEL_CMD 확인
+            comData.type = MD_SEND_RPM;
+            comData.id = 1;
+            comData.rpm = -100;
+            qarr.push(comData);
+            cntOffSec++;
+            #endif
+            
+            #if 0
+            // CTRL 입력확인용
             comData.type = MD_REQ_PID;
             comData.id = 1;
             comData.nArray[0] = PID_IO_MONITOR;
             qarr.push(comData);
+            cntOffSec++;
+            #endif
+            
+            #if 0
+            // 상태피드백 확인용
+            comData.type = MD_REQ_PID;
+            comData.id = 1;
+            comData.nArray[0] = PID_MAIN_DATA;
+            qarr.push(comData);
+            cntOffSec++;
+            #endif
+            
+            #if 0
+            // 토크 정지(자연정지)
+            comData.type = MD_CMD_PID;
+            comData.id = 1;
+            comData.pid = PID_TQ_OFF;
+            comData.nArray[0] = 0;
+            qarr.push(comData);
+            cntOffSec++;
+            #endif
+            
+            #if 0
+            // 모터 위치 리셋
+            comData.type = MD_SET_POS;
+            comData.id = 1;
+            comData.position = 0;
+            qarr.push(comData);
+            cntOffSec++;
+            #endif
+            
+            #if 1
+            // 모터 위치 이동
+            comData.type = MD_CMD_PID;
+            comData.id = 1;
+            comData.pid = PID_PNT_POS_VEL_CMD;
+            #define PPR 65535.0 // pulse/rev(encoder)
+            #define GEAR_RATIO 10.0
+            #define MMPR 5.0    // mm/rev(screw)
+            #define MIN_TO_SEC 60.0
+            double mm_in = 30.0;
+            if (0 > mm_in || mm_in > 50) break;
+            double screw_rev = mm_in / MMPR;
+            double gear_rev = screw_rev * GEAR_RATIO;
+            double encoder = gear_rev * PPR;
+            comData.position = (int)encoder;
+            double mm_sec_in = 1.0;   // 10 mm/s = 1200 rpm
+            if (0 > mm_sec_in || mm_sec_in > 10) break;
+            double mm_min = mm_sec_in * MIN_TO_SEC;
+            double screw_rev_min = mm_min / MMPR;
+            double gear_rev_min = screw_rev_min * GEAR_RATIO;
+            comData.rpm = gear_rev_min;
+            printf("[in ] mm: %7.3f, mm_sec: %7.3f, pos: %10d, rpm: %5d\n", mm_in, mm_sec_in, comData.position, comData.rpm);
+            qarr.push(comData);
+
+            double mm_out = 0.0;
+            mm_out = (double)Com.kaPosition[0] / PPR / GEAR_RATIO * MMPR;
+            double mm_sec_out = 0.0;
+            mm_sec_out = (double)Com.kaSpeed[0] / GEAR_RATIO * MMPR / MIN_TO_SEC;
+            printf("[out] mm: %7.3f, mm_sec: %7.3f, pos: %10d, rpm: %5d\n", mm_out, mm_sec_out, Com.kaPosition[0], Com.kaSpeed[0]);
+            cntOffSec++;
             #endif
             // 시험
+            #endif
+
+            #if 0
+            #define OFF_SEC 10
+            if (cntOffSec >= OFF_SEC) {
+                comData.type = MD_OFF;
+                qarr.push(comData);
+                break;
+            }
             #endif
 
             #if 0

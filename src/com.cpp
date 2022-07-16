@@ -146,6 +146,8 @@ int PutMdData(BYTE byPID, BYTE byMID, ComData comData)
     static IByte iData;
     static BYTE byPidDataSize, byDataSize, i, j;
     static BYTE byTempDataSum;
+    static char* pPosition;
+    static char* pRpm;
 
     for(j = 0; j <MAX_PACKET_SIZE; j++) Com.bySndBuf[j] = 0;
 
@@ -158,6 +160,29 @@ int PutMdData(BYTE byPID, BYTE byMID, ComData comData)
 		// 데이터 요청
         case PID_REQ_PID_DATA:          //PID_NUMBER -> 4
 
+            byDataSize      = 1;
+            byPidDataSize   = 7;
+            byTempDataSum   = 0;
+
+            Com.bySndBuf[4] = byDataSize;
+            Com.bySndBuf[5] = (BYTE)comData.nArray[0];
+
+            for(i = 0; i < (byPidDataSize-1); i++) byTempDataSum += Com.bySndBuf[i];
+            Com.bySndBuf[byPidDataSize-1] = ~(byTempDataSum) + 1; //check sum
+
+            #if 0
+            for (int i=0; i<byPidDataSize; i++) {
+                printf("[%02x]", Com.bySndBuf[i]);
+            }
+            printf("\n");
+            #endif
+
+            ser.write(Com.bySndBuf, byPidDataSize);
+
+            break;
+		// 데이터 요청
+        case PID_TQ_OFF:
+        case PID_BRAKE:
             byDataSize      = 1;
             byPidDataSize   = 7;
             byTempDataSum   = 0;
@@ -222,7 +247,6 @@ int PutMdData(BYTE byPID, BYTE byMID, ComData comData)
         // DEPRECATED
 		// 위치값 셋
         case PID_POSI_SET:
-            static char* pPosition;
             pPosition = (char*)&(nArray[0]);
 
             byDataSize    = 4;
@@ -320,6 +344,48 @@ int PutMdData(BYTE byPID, BYTE byMID, ComData comData)
             Com.bySndBuf[10] = 0;
             Com.bySndBuf[11] = REQUEST_PNT_MAIN_DATA;
             #endif
+
+            for(i = 0; i < (byPidDataSize-1); i++) byTempDataSum += Com.bySndBuf[i];
+            Com.bySndBuf[byPidDataSize-1] = ~(byTempDataSum) + 1; //check sum
+
+            #if 0
+            printf("send: ");
+            for (int idx=0; idx<byPidDataSize; idx++) {
+                printf("%02x ", Com.bySndBuf[idx]);
+            }
+            printf("\n");
+            #endif
+
+            ser.write(Com.bySndBuf, byPidDataSize);
+
+            break;
+		// 듀얼 모터드라이버의 위치 제어
+        case PID_PNT_POS_VEL_CMD:
+
+            byDataSize    = 15;
+            byPidDataSize = 21;
+            byTempDataSum = 0;
+
+            iData = Short2Byte((short)comData.rpm);
+
+            Com.bySndBuf[4]  = byDataSize;
+            Com.bySndBuf[5]  = comData.id;
+            pPosition = (char*)&comData.position;
+            Com.bySndBuf[6]  = pPosition[0];
+            Com.bySndBuf[7]  = pPosition[1];
+            Com.bySndBuf[8]  = pPosition[2];
+            Com.bySndBuf[9]  = pPosition[3];
+            pRpm = (char*)&comData.rpm;
+            Com.bySndBuf[10]  = pRpm[0];
+            Com.bySndBuf[11]  = pRpm[1];
+            Com.bySndBuf[12]  = 0;
+            Com.bySndBuf[13]  = 0;
+            Com.bySndBuf[14] = 0;
+            Com.bySndBuf[15]  = 0;
+            Com.bySndBuf[16]  = 0;
+            Com.bySndBuf[17] = 0;
+            Com.bySndBuf[18] = 0;
+            Com.bySndBuf[19] = REQUEST_PNT_MAIN_DATA;
 
             for(i = 0; i < (byPidDataSize-1); i++) byTempDataSum += Com.bySndBuf[i];
             Com.bySndBuf[byPidDataSize-1] = ~(byTempDataSum) + 1; //check sum
@@ -449,6 +515,7 @@ int PutMdData(BYTE byPID, BYTE byMID, ComData comData)
             break;
         #endif
         default:
+            printf("Unknown PID : %d\n", byPID);
             break;
     }
 
@@ -546,6 +613,7 @@ int MdReceiveProc(void) //save the identified serial data to defined variable ac
             kaposition                                  = Byte2LInt(Com.byRcvBuf[15], Com.byRcvBuf[16], Com.byRcvBuf[17], Com.byRcvBuf[18]);
             Com.kaBrake[byRcvID-ID_OFFSET]         = Com.byRcvBuf[19];
             Com.kaTemp[byRcvID-ID_OFFSET]          = Com.byRcvBuf[20];
+            Com.kaStatus2[byRcvID-ID_OFFSET]          = Com.byRcvBuf[21];
             Com.kaSpeed[byRcvID-ID_OFFSET] = kaspeed * inv_motor_in_arr[byRcvID-ID_OFFSET];
             Com.kaCurrent[byRcvID-ID_OFFSET] = kacurrent * inv_motor_in_arr[byRcvID-ID_OFFSET];
             Com.kaRefSpeed[byRcvID-ID_OFFSET] = karefspeed * inv_motor_in_arr[byRcvID-ID_OFFSET];
@@ -580,6 +648,19 @@ int MdReceiveProc(void) //save the identified serial data to defined variable ac
             printf("\n");
             #endif
 
+            #if 1
+            // printf("Com.kaType : %d\n", Com.kaType[0]);
+            // printf("Com.kaCtrlOutput : %d\n", Com.kaCtrlOutput[0]);
+            // printf("Com.kaStatus1 : %d\n", Com.kaStatus1[0]);
+            // printf("Com.kaBrake : %d\n", Com.kaBrake[0]);
+            // printf("Com.kaTemp : %d\n", Com.kaTemp[0]);
+            // printf("Com.kaStatus2 : %d\n", Com.kaStatus2[0]);
+            // printf("Com.kaSpeed : %d\n", Com.kaSpeed[0]);
+            // printf("Com.kaCurrent : %d\n", Com.kaCurrent[0]);
+            // printf("Com.kaRefSpeed : %d\n", Com.kaRefSpeed[0]);
+            printf("Com.kaPosition : %d\n", Com.kaPosition[0]);
+            #endif
+
             //ROS_INFO("%d  %d", Com.sCurrent[MOT_LEFT], Com.sCurrent[MOT_RIGHT]);
             //ROS_INFO("%d, %ld, %ld, %d, %ld, %ld, %d", Com.byStatus[MOT_LEFT], (long)Com.sMotorRPM[MOT_LEFT], Com.lMotorPosi[MOT_LEFT],
             //         Com.byStatus[MOT_RIGHT], (long)Com.sMotorRPM[MOT_RIGHT], Com.lMotorPosi[MOT_RIGHT], Com.fgResetEncoder);
@@ -606,19 +687,19 @@ int MdReceiveProc(void) //save the identified serial data to defined variable ac
             Com.kaIntVolume[byRcvID-ID_OFFSET] = Com.byRcvBuf[21];
 
             #if 1
-            printf("Com.kaSpeed : %d\n", Com.kaSpeed[0]);
-            printf("Com.kaCurrent : %d\n", Com.kaCurrent[0]);
-            printf("Com.kaStatus1 : %d\n", Com.kaStatus1[0]);
+            // printf("Com.kaSpeed : %d\n", Com.kaSpeed[0]);
+            // printf("Com.kaCurrent : %d\n", Com.kaCurrent[0]);
+            // printf("Com.kaStatus1 : %d\n", Com.kaStatus1[0]);
             printf("Com.kaCtrlInput : %d\n", Com.kaCtrlInput[0]);
-            printf("Com.kaExtVolume : %d\n", Com.kaExtVolume[0]);
-            printf("Com.ka8PinDip : %d\n", Com.ka8PinDip[0]);
+            // printf("Com.kaExtVolume : %d\n", Com.kaExtVolume[0]);
+            // printf("Com.ka8PinDip : %d\n", Com.ka8PinDip[0]);
             printf("Com.kaHallsensor : %d\n", Com.kaHallsensor[0]);
-            printf("Com.kaStatus2 : %d\n", Com.kaStatus2[0]);
-            printf("Com.kaSwInput : %d\n", Com.kaSwInput[0]);
-            printf("Com.kaMainVol : %d\n", Com.kaMainVol[0]);
-            printf("Com.kaSlowStart : %d\n", Com.kaSlowStart[0]);
-            printf("Com.kaSlowDown : %d\n", Com.kaSlowDown[0]);
-            printf("Com.kaIntVolume : %d\n", Com.kaIntVolume[0]);
+            // printf("Com.kaStatus2 : %d\n", Com.kaStatus2[0]);
+            // printf("Com.kaSwInput : %d\n", Com.kaSwInput[0]);
+            // printf("Com.kaMainVol : %d\n", Com.kaMainVol[0]);
+            // printf("Com.kaSlowStart : %d\n", Com.kaSlowStart[0]);
+            // printf("Com.kaSlowDown : %d\n", Com.kaSlowDown[0]);
+            // printf("Com.kaIntVolume : %d\n", Com.kaIntVolume[0]);
             #endif
 
             #if 0
@@ -729,6 +810,9 @@ int MdReceiveProc(void) //save the identified serial data to defined variable ac
             Com.sTempTheta    = Byte2Short(Com.byRcvBuf[13], Com.byRcvBuf[14]);
             break;
         #endif
+        case PID_IN_POSITION_OK:
+            printf("PID_IN_POSITION_OK : %d\n", Com.byRcvBuf[5]);
+            break;
         default:
             printf("Uknown PID: %d\n", byRcvPID);
             break;
@@ -899,7 +983,7 @@ int AnalyzeReceivedData(BYTE byArray[], BYTE byBufNum) //Analyze the communicati
 
             lExStampNsec = stamp.nsec;
 
-            #if 1
+            #if 0
             printf("recv success(checksum ok)\n");
             #endif
             MdReceiveProc();                                 //save the identified serial data to defined variable
@@ -935,7 +1019,7 @@ int ReceiveDataFromController(void) //Analyze the communication data
     {
         readBytes = ser.read(byRcvBuf, byBufNumber);
 
-        #if 1
+        #if 0
         printf("%d, %d, ser.read: ", readBytes, byBufNumber);
         for (int idx=0; idx<byBufNumber; idx++) {
             printf("%02x ", byRcvBuf[idx]);

@@ -6,6 +6,8 @@
 #define MD_SEND_RPM         0
 #define MD_SET_POS          1
 #define MD_REQ_PID          2
+#define MD_OFF              3
+#define MD_CMD_PID          4
 
 #define ID_BLDC_CTRL        1
 #define ID_MDUI             2
@@ -13,14 +15,24 @@
 
 #define PID_VER             1
 #define PID_REQ_PID_DATA    4
-// #define PID_COMMAND         10   // DEPRECATED
+#define PID_TQ_OFF          5
+#define PID_BRAKE           6
+#define PID_ACK             7
+
+#define PID_COMMAND         10
+#define PID_CMD_TQ_OFF      2
+#define PID_CMD_BRAKE       4
+#define PIC_CMD_POSI_RESET  10
+
 #define PID_POSI_RESET      13
+#define PID_IN_POSITION_OK  49
 // #define PID_BAUDRATE        135  // DEPRECATED
 // #define PID_VOLT_IN         143  // DEPRECATED
 #define PID_SLOW_START      153
 #define PID_SLOW_DOWN       154
 // #define PID_PNT_TQ_OFF      174  // DEPRECATED
 // #define PID_PNT_BRAKE       175  // DEPRECATED
+#define PID_PNT_POS_VEL_CMD 206
 #define PID_PNT_VEL_CMD     207
 #define PID_MAIN_DATA       193
 #define PID_IO_MONITOR      194
@@ -168,6 +180,7 @@ typedef struct {
 typedef struct _ComData {
     int type;
     int id;
+    int pid;
     int rpm;
     int position;
     int nArray[5];

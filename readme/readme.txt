@@ -18,12 +18,12 @@
     4) IO 상태
 
 2. 로직
-  가. 정지(PID : )
+  가. 정지(PID : PID_COM_WATCH_DELAY(#185), PID_TQ_OFF(#5), PID_BRAKE(#6), PID_STOP_STATUS(#24))
     1) 정지 명령 송신
-  나. 위치제어(PID : )
+  나. 위치제어(PID : PID_IN_POSITION_OK(#49, PID_POSI_SS(#178), PID_POSI_SD(#179), PID_PV_GAIN(#167), PID_P_GAIN(#168), PID_V_GAIN(#169), PID_GAIN(#203), PID_PNT_POSI_VEL_CMD(#206), PID_PNT_VEL_CMD(#207)))
     1) 호밍 여부 확인
     2) 제어 명령 송신
-  다. 호밍(PID : )
+  다. 호밍(PID : PID_INIT_SET(#35), PID_POSI_RESET(#13), PID_POSI_SET(#217))
     1) 토크호밍(또는 위치제어) 명령 송신
     2) 호밍(rpm변경)이 되는지 확인
       가) 여부에 따라서 진행
@@ -33,3 +33,23 @@
   라. 상태(PID : )
     1) 1초에 한 번씩 IO 상태확인(PID : )
     2) 1초에 한 번씩 제어 상태확인(PID : )
+
+3. PID 확인
+  x PID_VER
+  x PID_IO_MONITOR
+  PID_COM_WATCH_DELAY(#185)
+  x PID_TQ_OFF(#5)
+  x PID_BRAKE(#6)
+  PID_STOP_STATUS(#24)
+  x PID_IN_POSITION_OK(#49)
+  PID_POSI_SS(#178)
+  PID_POSI_SD(#179)
+  PID_PV_GAIN(#167)
+  PID_P_GAIN(#168)
+  PID_V_GAIN(#169)
+  PID_GAIN(#203)
+  PID_PNT_POSI_VEL_CMD(#206)
+  PID_PNT_VEL_CMD(#207)
+  PID_INIT_SET(#35)
+  PID_POSI_RESET(#13)
+  PID_POSI_SET(#217)
