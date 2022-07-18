@@ -1,5 +1,10 @@
 <launch>
     <arg name="MOTOR_NUM" doc="MOTOR_NUM"/>
+    <arg name="GEAR_RATIO" doc="GEAR_RATIO"/>
+    <arg name="MOTOR_TICK" doc="MOTOR_TICK"/>
+    <arg name="SCREW_LEAD" doc="SCREW_LEAD"/>
+    <arg name="TIMEOUT_SEC_MAIN" doc="TIMEOUT_SEC_MAIN"/>
+    <arg name="TIMEOUT_SEC_IO" doc="TIMEOUT_SEC_IO"/>
     <arg name="message_display" default="screen" doc="output type"/>
     <arg name="main_hz" default="1000" doc="main loop herz"/>
     <arg name="communication" default="rs485" doc="communication"/>
@@ -19,6 +24,11 @@
         <param name = "slowdown"         value = "300"/>
 
         <param name="MOTOR_NUM" value="$(arg MOTOR_NUM)"/>
+        <param name="GEAR_RATIO" value="$(arg GEAR_RATIO)"/>
+        <param name="MOTOR_TICK" value="$(arg MOTOR_TICK)"/>
+        <param name="SCREW_LEAD" value="$(arg SCREW_LEAD)"/>
+        <param name="TIMEOUT_SEC_MAIN" value="$(arg TIMEOUT_SEC_MAIN)"/>
+        <param name="TIMEOUT_SEC_IO" value="$(arg TIMEOUT_SEC_IO)"/>
         <param name="main_hz" value="$(arg main_hz)"/>
         <param name="communication" value="$(arg communication)"/>
         <rosparam param="inv_motor_in_arr" subst_value="true">$(arg inv_motor_in_arr)</rosparam>

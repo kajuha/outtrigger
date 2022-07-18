@@ -649,16 +649,16 @@ int MdReceiveProc(void) //save the identified serial data to defined variable ac
             #endif
 
             #if 1
-            // printf("Com.kaType : %d\n", Com.kaType[0]);
-            // printf("Com.kaCtrlOutput : %d\n", Com.kaCtrlOutput[0]);
-            // printf("Com.kaStatus1 : %d\n", Com.kaStatus1[0]);
-            // printf("Com.kaBrake : %d\n", Com.kaBrake[0]);
-            // printf("Com.kaTemp : %d\n", Com.kaTemp[0]);
-            // printf("Com.kaStatus2 : %d\n", Com.kaStatus2[0]);
-            // printf("Com.kaSpeed : %d\n", Com.kaSpeed[0]);
-            // printf("Com.kaCurrent : %d\n", Com.kaCurrent[0]);
-            // printf("Com.kaRefSpeed : %d\n", Com.kaRefSpeed[0]);
-            printf("Com.kaPosition : %d\n", Com.kaPosition[0]);
+            // printf("[PID_MAIN_DATA] kaType : %d\n", Com.kaType[0]);
+            // printf("[PID_MAIN_DATA] kaCtrlOutput : %d\n", Com.kaCtrlOutput[0]);
+            // printf("[PID_MAIN_DATA] kaStatus1 : %d\n", Com.kaStatus1[0]);
+            // printf("[PID_MAIN_DATA] kaBrake : %d\n", Com.kaBrake[0]);
+            // printf("[PID_MAIN_DATA] kaTemp : %d\n", Com.kaTemp[0]);
+            // printf("[PID_MAIN_DATA] kaStatus2 : %d\n", Com.kaStatus2[0]);
+            // printf("[PID_MAIN_DATA] kaSpeed : %d\n", Com.kaSpeed[0]);
+            // printf("[PID_MAIN_DATA] kaCurrent : %d\n", Com.kaCurrent[0]);
+            // printf("[PID_MAIN_DATA] kaRefSpeed : %d\n", Com.kaRefSpeed[0]);
+            printf("[PID_MAIN_DATA] kaPosition : %d\n", Com.kaPosition[0]);
             #endif
 
             //ROS_INFO("%d  %d", Com.sCurrent[MOT_LEFT], Com.sCurrent[MOT_RIGHT]);
@@ -668,7 +668,7 @@ int MdReceiveProc(void) //save the identified serial data to defined variable ac
             break;
         // 모터 드라이버를 위한 데이터
         case PID_IO_MONITOR: //194
-            Com.kaTsLast[byRcvID-ID_OFFSET] = ros::Time::now();
+            Com.kaTsLastIo[byRcvID-ID_OFFSET] = ros::Time::now();
             
             kaspeed = Byte2Short(Com.byRcvBuf[5], Com.byRcvBuf[6]);
             Com.kaSpeed[byRcvID-ID_OFFSET] = kaspeed * inv_motor_in_arr[byRcvID-ID_OFFSET];
@@ -687,19 +687,19 @@ int MdReceiveProc(void) //save the identified serial data to defined variable ac
             Com.kaIntVolume[byRcvID-ID_OFFSET] = Com.byRcvBuf[21];
 
             #if 1
-            // printf("Com.kaSpeed : %d\n", Com.kaSpeed[0]);
-            // printf("Com.kaCurrent : %d\n", Com.kaCurrent[0]);
-            // printf("Com.kaStatus1 : %d\n", Com.kaStatus1[0]);
-            printf("Com.kaCtrlInput : %d\n", Com.kaCtrlInput[0]);
-            // printf("Com.kaExtVolume : %d\n", Com.kaExtVolume[0]);
-            // printf("Com.ka8PinDip : %d\n", Com.ka8PinDip[0]);
-            printf("Com.kaHallsensor : %d\n", Com.kaHallsensor[0]);
-            // printf("Com.kaStatus2 : %d\n", Com.kaStatus2[0]);
-            // printf("Com.kaSwInput : %d\n", Com.kaSwInput[0]);
-            // printf("Com.kaMainVol : %d\n", Com.kaMainVol[0]);
-            // printf("Com.kaSlowStart : %d\n", Com.kaSlowStart[0]);
-            // printf("Com.kaSlowDown : %d\n", Com.kaSlowDown[0]);
-            // printf("Com.kaIntVolume : %d\n", Com.kaIntVolume[0]);
+            // printf("[PID_IO_MONITOR] kaSpeed : %d\n", Com.kaSpeed[0]);
+            // printf("[PID_IO_MONITOR] kaCurrent : %d\n", Com.kaCurrent[0]);
+            // printf("[PID_IO_MONITOR] kaStatus1 : %d\n", Com.kaStatus1[0]);
+            printf("[PID_IO_MONITOR] kaCtrlInput : %d\n", Com.kaCtrlInput[0]);
+            // printf("[PID_IO_MONITOR] kaExtVolume : %d\n", Com.kaExtVolume[0]);
+            // printf("[PID_IO_MONITOR] ka8PinDip : %d\n", Com.ka8PinDip[0]);
+            printf("[PID_IO_MONITOR] kaHallsensor : %d\n", Com.kaHallsensor[0]);
+            // printf("[PID_IO_MONITOR] kaStatus2 : %d\n", Com.kaStatus2[0]);
+            // printf("[PID_IO_MONITOR] kaSwInput : %d\n", Com.kaSwInput[0]);
+            // printf("[PID_IO_MONITOR] kaMainVol : %d\n", Com.kaMainVol[0]);
+            // printf("[PID_IO_MONITOR] kaSlowStart : %d\n", Com.kaSlowStart[0]);
+            // printf("[PID_IO_MONITOR] kaSlowDown : %d\n", Com.kaSlowDown[0]);
+            // printf("[PID_IO_MONITOR] kaIntVolume : %d\n", Com.kaIntVolume[0]);
             #endif
 
             #if 0
@@ -983,7 +983,7 @@ int AnalyzeReceivedData(BYTE byArray[], BYTE byBufNum) //Analyze the communicati
 
             lExStampNsec = stamp.nsec;
 
-            #if 0
+            #if 1
             printf("recv success(checksum ok)\n");
             #endif
             MdReceiveProc();                                 //save the identified serial data to defined variable
@@ -1019,7 +1019,7 @@ int ReceiveDataFromController(void) //Analyze the communication data
     {
         readBytes = ser.read(byRcvBuf, byBufNumber);
 
-        #if 0
+        #if 1
         printf("%d, %d, ser.read: ", readBytes, byBufNumber);
         for (int idx=0; idx<byBufNumber; idx++) {
             printf("%02x ", byRcvBuf[idx]);

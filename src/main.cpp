@@ -2,15 +2,21 @@
 #include <boost/lockfree/queue.hpp>
 #include <std_msgs/Empty.h>
 
+#include "outtrigger/SetPid.h"
+#include "outtrigger/Info.h"
+
 #include "global.hpp"
 #include "main.hpp"
 #include "com.hpp"
 
 #include <ros/ros.h>
 
-ros::Time ts_now;;
-
 int MOTOR_NUM;
+double GEAR_RATIO;
+double MOTOR_TICK;
+double SCREW_LEAD;
+double TIMEOUT_SEC_MAIN;
+double TIMEOUT_SEC_IO;
 std::vector<double> inv_motor_in_arr;
 std::vector<double> inv_encoder_out_arr;
 
@@ -20,6 +26,136 @@ Communication Com;
 
 #define LOCKFREE_QUEUE_SIZE 100
 boost::lockfree::queue<ComData> qarr(LOCKFREE_QUEUE_SIZE);
+
+void setPidCallback(const outtrigger::SetPid& pid) {
+    static ComData comData;
+    printf("[%lf] id: %d, pid: %d, rpm: %d, pos_mm: %lf, vel_mm_s: %lf\n",
+        ros::Time::now().toSec(), pid.id, pid.pid, pid.rpm, pid.pos_mm, pid.vel_mm_s);
+        
+        switch (pid.pid) {
+            case (int)CmdMode::REQ_VER:
+                // VERSION 확인
+                comData.type = MD_REQ_PID;
+                comData.id = pid.id;
+                comData.nArray[0] = PID_VER;
+                qarr.push(comData);
+                break;
+            case (int)CmdMode::CMD_BRAKE:
+                // 전기적 브레이크 정지(전기적 브레이크 정지)
+                comData.type = MD_CMD_PID;
+                comData.id = pid.id;
+                comData.pid = PID_BRAKE;
+                comData.nArray[0] = 0;
+                qarr.push(comData);
+                break;
+            case (int)CmdMode::REQ_INPOS:
+                // PID_IN_POSITION_OK 확인
+                comData.type = MD_CMD_PID;
+                comData.id = pid.id;
+                comData.pid = PID_REQ_PID_DATA;
+                comData.nArray[0] = PID_IN_POSITION_OK;
+                qarr.push(comData);
+                break;
+            case (int)CmdMode::CMD_VEL:
+                // PID_PNT_VEL_CMD 확인
+                comData.type = MD_SEND_RPM;
+                comData.id = pid.id;
+                comData.rpm = pid.rpm;
+                qarr.push(comData);
+                break;
+            case (int)CmdMode::REQ_IO:
+                // CTRL 입력확인용
+                comData.type = MD_REQ_PID;
+                comData.id = pid.id;
+                comData.nArray[0] = PID_IO_MONITOR;
+                qarr.push(comData);
+                break;
+            case (int)CmdMode::REQ_MAIN:
+                // 상태피드백 확인용
+                comData.type = MD_REQ_PID;
+                comData.id = pid.id;
+                comData.nArray[0] = PID_MAIN_DATA;
+                qarr.push(comData);
+                break;
+            case (int)CmdMode::CMD_TQ_OFF:
+                // 토크 정지(자연정지)
+                comData.type = MD_CMD_PID;
+                comData.id = pid.id;
+                comData.pid = PID_TQ_OFF;
+                comData.nArray[0] = 0;
+                qarr.push(comData);
+                break;
+            case (int)CmdMode::CMD_RESET_POS:
+                // 모터 위치 리셋
+                comData.type = MD_SET_POS;
+                comData.id = pid.id;
+                comData.position = 0;
+                qarr.push(comData);
+                break;
+            case (int)CmdMode::CMD_SET_POS:
+                // 모터 위치 이동
+                comData.type = MD_CMD_PID;
+                comData.id = pid.id;
+                comData.pid = PID_PNT_POS_VEL_CMD;
+                #define MIN_TO_SEC 60.0
+                static double mm_in;
+                mm_in = pid.pos_mm;
+                if (0 > mm_in || mm_in > 50) break;
+                static double screw_rev;
+                screw_rev = mm_in / SCREW_LEAD;
+                static double gear_rev;
+                gear_rev = screw_rev * GEAR_RATIO;
+                static double encoder;
+                encoder = gear_rev * MOTOR_TICK;
+                comData.position = (int)encoder;
+                static double mm_sec_in;
+                mm_sec_in = pid.vel_mm_s;   // 10 mm/s = 1200 rpm
+                if (0.0 > mm_sec_in || mm_sec_in > 10.0) break;
+                static double mm_min;
+                mm_min = mm_sec_in * MIN_TO_SEC;
+                static double screw_rev_min;
+                screw_rev_min = mm_min / SCREW_LEAD;
+                static double gear_rev_min;
+                gear_rev_min = screw_rev_min * GEAR_RATIO;
+                comData.rpm = gear_rev_min;
+                printf("[in ] mm: %7.3f, mm_sec: %7.3f, pos: %10d, rpm: %5d\n", mm_in, mm_sec_in, comData.position, comData.rpm);
+                qarr.push(comData);
+
+                static double mm_out;
+                mm_out = 0.0;
+                mm_out = (double)Com.kaPosition[0] / MOTOR_TICK / GEAR_RATIO * SCREW_LEAD;
+                static double mm_sec_out;
+                mm_sec_out = 0.0;
+                mm_sec_out = (double)Com.kaSpeed[0] / GEAR_RATIO * SCREW_LEAD / MIN_TO_SEC;
+                printf("[out] mm: %7.3f, mm_sec: %7.3f, pos: %10d, rpm: %5d\n", mm_out, mm_sec_out, Com.kaPosition[0], Com.kaSpeed[0]);
+                break;
+            default:
+                break;
+        }
+}
+
+void checkOuttrigger() {
+    ros::Time ts_now;
+    double timeout;
+
+    #if 0
+    ts_now = ros::Time::now();
+    for (int i=0; i<MOTOR_NUM; i++) {
+        timeout = ts_now.toSec() - Com.kaTsLast[i].toSec();
+        if (timeout > TIMEOUT_SEC_MAIN) {
+            printf("invalid main data: #%d, timeout: %lf, SET_TIMEOUT: %lf\n", i, timeout, TIMEOUT_SEC_MAIN);
+        }
+    }
+    #endif
+
+    ts_now = ros::Time::now();
+    for (int i=0; i<MOTOR_NUM; i++) {
+        timeout = ts_now.toSec() - Com.kaTsLastIo[i].toSec();
+        if (timeout > TIMEOUT_SEC_IO) {
+            printf("invalid io data: #%d, timeout: %lf, SET_TIMEOUT: %lf\n", i, timeout, TIMEOUT_SEC_IO);
+        }
+    }
+}
 
 void sendMsgMd1k(int* send_rate) {
     ros::NodeHandlePtr node = boost::make_shared<ros::NodeHandle>();
@@ -83,12 +219,22 @@ int main(int argc, char** argv)
     // 파라미터 초기화
     #if 1
     ros::param::get("~MOTOR_NUM", MOTOR_NUM);
+    ros::param::get("~GEAR_RATIO", GEAR_RATIO);
+    ros::param::get("~MOTOR_TICK", MOTOR_TICK);
+    ros::param::get("~SCREW_LEAD", SCREW_LEAD);
+    ros::param::get("~TIMEOUT_SEC_MAIN", TIMEOUT_SEC_MAIN);
+    ros::param::get("~TIMEOUT_SEC_IO", TIMEOUT_SEC_IO);
     ros::param::get("~main_hz", main_hz);
     ros::param::get("~communication", com);
     ros::param::get("~inv_motor_in_arr", inv_motor_in_arr);
     ros::param::get("~inv_encoder_out_arr", inv_encoder_out_arr);
     #else
     nh.getParam("MOTOR_NUM", MOTOR_NUM);
+    nh.getParam("GEAR_RATIO", GEAR_RATIO);
+    nh.getParam("MOTOR_TICK", MOTOR_TICK);
+    nh.getParam("SCREW_LEAD", SCREW_LEAD);
+    nh.getParam("TIMEOUT_SEC_MAIN", TIMEOUT_SEC_MAIN);
+    nh.getParam("TIMEOUT_SEC_IO", TIMEOUT_SEC_IO);
     nh.getParam("main_hz", main_hz);
     nh.getParam("communication", com);
     nh.getParam("inv_motor_in_arr", inv_motor_in_arr);
@@ -156,6 +302,12 @@ int main(int argc, char** argv)
     } else {
     }
 
+    // topic
+    // publisher
+    ros::Publisher pub_info = nh.advertise<outtrigger::Info>("/outtrigger/info", 100);
+    // subscriber
+    ros::Subscriber sub_setPid = nh.subscribe("/outtrigger/setPid", 100, setPidCallback);
+
     boost::thread threadSendMsgMd1k(sendMsgMd1k, &send_rate);
   
     if (Com.kaCom == "rs485") {
@@ -181,9 +333,12 @@ int main(int argc, char** argv)
 
     ros::Rate r(main_hz);
 
+    ros::Time ts_now;
+    
     ts_now = ros::Time::now();
     for (int i=0; i<MOTOR_NUM; i++) {
         Com.kaTsLast[i] = ts_now;
+        Com.kaTsLastIo[i] = ts_now;
     }
 
     while(ros::ok())
@@ -205,139 +360,6 @@ int main(int argc, char** argv)
 
             #if 0
             for (int i=0; i<MOTOR_NUM; i++) {
-                motor_in_rpm[i] = Motor_rpm[i];
-                motor_in_rpm[i] *= inv_motor_in_arr[i];
-
-                if (Com.kaCom == "rs485") {
-                    comData.type = MD_SEND_RPM;
-                    comData.id = i+ID_OFFSET;
-                    comData.rpm = (short)motor_in_rpm[i];
-                } else {
-                }
-                qarr.push(comData);
-            }
-            #else
-            // 시험
-            #if 0
-            // VERSION 확인
-            comData.type = MD_REQ_PID;
-            comData.id = 1;
-            comData.nArray[0] = PID_VER;
-            qarr.push(comData);
-            cntOffSec++;
-            #endif
-            
-            #if 0
-            // 전기적 브레이크 정지(전기적 브레이크 정지)
-            comData.type = MD_CMD_PID;
-            comData.id = 1;
-            comData.pid = PID_BRAKE;
-            comData.nArray[0] = 0;
-            qarr.push(comData);
-            cntOffSec++;
-            #endif
-            
-            #if 0
-            // PID_IN_POSITION_OK 확인
-            comData.type = MD_CMD_PID;
-            comData.id = 1;
-            comData.pid = PID_REQ_PID_DATA;
-            comData.nArray[0] = PID_IN_POSITION_OK;
-            qarr.push(comData);
-            cntOffSec++;
-            #endif
-            
-            #if 0
-            // PID_PNT_VEL_CMD 확인
-            comData.type = MD_SEND_RPM;
-            comData.id = 1;
-            comData.rpm = -100;
-            qarr.push(comData);
-            cntOffSec++;
-            #endif
-            
-            #if 0
-            // CTRL 입력확인용
-            comData.type = MD_REQ_PID;
-            comData.id = 1;
-            comData.nArray[0] = PID_IO_MONITOR;
-            qarr.push(comData);
-            cntOffSec++;
-            #endif
-            
-            #if 0
-            // 상태피드백 확인용
-            comData.type = MD_REQ_PID;
-            comData.id = 1;
-            comData.nArray[0] = PID_MAIN_DATA;
-            qarr.push(comData);
-            cntOffSec++;
-            #endif
-            
-            #if 0
-            // 토크 정지(자연정지)
-            comData.type = MD_CMD_PID;
-            comData.id = 1;
-            comData.pid = PID_TQ_OFF;
-            comData.nArray[0] = 0;
-            qarr.push(comData);
-            cntOffSec++;
-            #endif
-            
-            #if 0
-            // 모터 위치 리셋
-            comData.type = MD_SET_POS;
-            comData.id = 1;
-            comData.position = 0;
-            qarr.push(comData);
-            cntOffSec++;
-            #endif
-            
-            #if 1
-            // 모터 위치 이동
-            comData.type = MD_CMD_PID;
-            comData.id = 1;
-            comData.pid = PID_PNT_POS_VEL_CMD;
-            #define PPR 65535.0 // pulse/rev(encoder)
-            #define GEAR_RATIO 10.0
-            #define MMPR 5.0    // mm/rev(screw)
-            #define MIN_TO_SEC 60.0
-            double mm_in = 30.0;
-            if (0 > mm_in || mm_in > 50) break;
-            double screw_rev = mm_in / MMPR;
-            double gear_rev = screw_rev * GEAR_RATIO;
-            double encoder = gear_rev * PPR;
-            comData.position = (int)encoder;
-            double mm_sec_in = 1.0;   // 10 mm/s = 1200 rpm
-            if (0 > mm_sec_in || mm_sec_in > 10) break;
-            double mm_min = mm_sec_in * MIN_TO_SEC;
-            double screw_rev_min = mm_min / MMPR;
-            double gear_rev_min = screw_rev_min * GEAR_RATIO;
-            comData.rpm = gear_rev_min;
-            printf("[in ] mm: %7.3f, mm_sec: %7.3f, pos: %10d, rpm: %5d\n", mm_in, mm_sec_in, comData.position, comData.rpm);
-            qarr.push(comData);
-
-            double mm_out = 0.0;
-            mm_out = (double)Com.kaPosition[0] / PPR / GEAR_RATIO * MMPR;
-            double mm_sec_out = 0.0;
-            mm_sec_out = (double)Com.kaSpeed[0] / GEAR_RATIO * MMPR / MIN_TO_SEC;
-            printf("[out] mm: %7.3f, mm_sec: %7.3f, pos: %10d, rpm: %5d\n", mm_out, mm_sec_out, Com.kaPosition[0], Com.kaSpeed[0]);
-            cntOffSec++;
-            #endif
-            // 시험
-            #endif
-
-            #if 0
-            #define OFF_SEC 10
-            if (cntOffSec >= OFF_SEC) {
-                comData.type = MD_OFF;
-                qarr.push(comData);
-                break;
-            }
-            #endif
-
-            #if 0
-            for (int i=0; i<MOTOR_NUM; i++) {
                 printf("%6.3lf ", Motor_rpm[i]);
             }
             printf("send:%lf \n", ros::Time::now().toSec());
@@ -348,6 +370,10 @@ int main(int argc, char** argv)
             printf("recv:%lf \n", ros::Time::now().toSec());
             #endif
         }
+        
+        #if 0
+        checkOuttrigger();
+        #endif
 
         // printf("%d, %lf \n", __LINE__, ros::Time::now().toSec());
         ros::spinOnce();

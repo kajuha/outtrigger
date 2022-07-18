@@ -126,6 +126,7 @@ class Communication {
     std::vector<BYTE> kaBrake;
     std::vector<BYTE> kaTemp;
     std::vector<ros::Time> kaTsLast;
+    std::vector<ros::Time> kaTsLastIo;
     std::vector<int> kaSetPosition;
     std::vector<BYTE> kaStatus2;
     std::vector<BYTE> kaCtrlInput;
@@ -154,6 +155,7 @@ class Communication {
         kaBrake = std::vector<BYTE>(motor_num);
         kaTemp = std::vector<BYTE>(motor_num);
         kaTsLast = std::vector<ros::Time>(motor_num);
+        kaTsLastIo = std::vector<ros::Time>(motor_num);
         kaSetPosition = std::vector<int>(motor_num);
         kaStatus2 = std::vector<BYTE>(motor_num);
         kaCtrlInput = std::vector<BYTE>(motor_num);
