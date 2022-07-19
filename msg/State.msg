@@ -1,4 +1,12 @@
 Header header
-int32 homingDone
-float64 pos_mm
-float64 vel_mm_s
+int32 id
+int32 rpm
+float64 ampere
+int32 controlType
+int32 refRpm
+int32 ctrlOutput
+int32 condition1
+int32 position
+int32 brake
+int32 temperature
+int32 condition2

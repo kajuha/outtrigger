@@ -16,8 +16,8 @@
         <!-- <arg name="MOTOR_TICK" value="65535.0"/> -->
         <arg name="MOTOR_TICK" value="24.0"/>
         <arg name="SCREW_LEAD" value="5.0"/>
-        <arg name="TIMEOUT_SEC_MAIN" value="2.0"/>
-        <arg name="TIMEOUT_SEC_IO" value="2.0"/>
+        <arg name="TIMEOUT_SEC_MAIN" value="3.0"/>
+        <arg name="TIMEOUT_SEC_IO" value="3.0"/>
         <arg name="message_display" value="$(arg message_display)"/>
         <arg name="main_hz" value="$(arg main_hz)"/>
         <arg name="communication" value="$(arg communication)"/>
