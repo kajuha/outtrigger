@@ -983,7 +983,7 @@ int AnalyzeReceivedData(BYTE byArray[], BYTE byBufNum) //Analyze the communicati
 
             lExStampNsec = stamp.nsec;
 
-            #if 1
+            #if 0
             printf("recv success(checksum ok)\n");
             #endif
             MdReceiveProc();                                 //save the identified serial data to defined variable
@@ -1019,7 +1019,7 @@ int ReceiveDataFromController(void) //Analyze the communication data
     {
         readBytes = ser.read(byRcvBuf, byBufNumber);
 
-        #if 1
+        #if 0
         printf("%d, %d, ser.read: ", readBytes, byBufNumber);
         for (int idx=0; idx<byBufNumber; idx++) {
             printf("%02x ", byRcvBuf[idx]);
