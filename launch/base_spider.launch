@@ -3,8 +3,8 @@
     <arg name="message_display" default="screen" doc="output type"/>
     <arg name="main_hz" default="1000" doc="main loop herz"/>
     <arg name="communication" default="rs485" doc="communication"/>
-    <arg name="serial_port" default="/dev/ttyUSB0" doc="serial_port"/>
-    <arg name="baudrate" default="9600" doc="baudrate"/>
+    <arg name="serial_port" default="/dev/recipe.driver.md1k.all" doc="serial_port"/>
+    <arg name="baudrate" default="115200" doc="baudrate"/>
     <!-- <arg name="inv_motor_in_arr" default="[1.0, 1.0, 1.0, 1.0]" doc="inv_motor_in_arr"/>
     <arg name="inv_encoder_out_arr" default="[1.0, 1.0, 1.0, 1.0]" doc="inv_encoder_out_arr"/> -->
     <arg name="inv_motor_in_arr" default="[1.0]" doc="inv_motor_in_arr"/>
@@ -13,8 +13,7 @@
     <include file="$(find outtrigger)/launch/base.launch">
         <arg name="MOTOR_NUM" value="$(arg MOTOR_NUM)"/>
         <arg name="GEAR_RATIO" value="10.0"/>
-        <!-- <arg name="MOTOR_TICK" value="65535.0"/> -->
-        <arg name="MOTOR_TICK" value="24.0"/>
+        <arg name="MOTOR_TICK" value="65535.0"/>
         <arg name="SCREW_LEAD" value="5.0"/>
         <arg name="TIMEOUT_SEC_MAIN" value="3.0"/>
         <arg name="TIMEOUT_SEC_IO" value="3.0"/>
