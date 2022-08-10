@@ -56,13 +56,14 @@ find_package(catkin REQUIRED COMPONENTS
 # )
 add_message_files(
   FILES
-  Position.msg    # 아웃트리거 위치제어
-  Info.msg        # 아웃트리거 정보
   PidRequest.msg  # 모터드라이버 정보요청
   PidCommand.msg  # 모터드라이버 명령요청
   PidVelocity.msg # 모터드라이버 속도제어
   PidPosition.msg # 모터드라이버 위치제어
+  Command.msg    # 아웃트리거 제어
+  Info.msg        # 아웃트리거 정보
   State.msg       # 모터드라이버 상태
+  Commands.msg
   Infos.msg
   States.msg
 )

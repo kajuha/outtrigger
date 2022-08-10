@@ -6,7 +6,7 @@
 #include "outtrigger/PidCommand.h"
 #include "outtrigger/PidVelocity.h"
 #include "outtrigger/PidPosition.h"
-#include "outtrigger/Position.h"
+#include "outtrigger/Command.h"
 
 #include "outtrigger/Info.h"
 #include "outtrigger/State.h"
@@ -127,16 +127,16 @@ void pidPositionCallback(const outtrigger::PidPosition& pidPosition) {
     qarr.push(comData);
 }
 
-void positionCallback(const outtrigger::Position& position) {
+void commandCallback(const outtrigger::Command& command) {
     static ComData comData;
 
     // 모터 위치 이동
     comData.type = MD_CMD_PID;
-    comData.id = position.id;
+    comData.id = command.command;
     comData.pid = PID_PNT_POS_VEL_CMD;
     #define MIN_TO_SEC 60.0
     static double mm_in;
-    mm_in = position.mm;
+    mm_in = command.mm;
     #define MIN_MM 0.0
     #define MAX_MM 100.0
     if (MIN_MM > mm_in || mm_in > MAX_MM) return;
@@ -148,7 +148,7 @@ void positionCallback(const outtrigger::Position& position) {
     encoder = gear_rev * MOTOR_TICK;
     comData.position = (int)encoder;
     static double mm_sec_in;
-    mm_sec_in = position.mm_per_sec;   // 10 mm/s = 1200 rpm
+    mm_sec_in = command.mm_per_sec;   // 10 mm/s = 1200 rpm
     #define MIN_MM_PER_SEC 0.0
     #define MAX_MM_PER_SEC 20.0
     if (MIN_MM_PER_SEC > mm_sec_in || mm_sec_in > MAX_MM_PER_SEC) return;
@@ -345,7 +345,7 @@ int main(int argc, char** argv)
     ros::Subscriber sub_pidCommand = nh.subscribe("/outtrigger/pidCommand", 100, pidCommandCallback);
     ros::Subscriber sub_pidVelocity = nh.subscribe("/outtrigger/pidVelocity", 100, pidVelocityCallback);
     ros::Subscriber sub_pidPosition = nh.subscribe("/outtrigger/pidPosition", 100, pidPositionCallback);
-    ros::Subscriber sub_position = nh.subscribe("/outtrigger/position", 100, positionCallback);
+    ros::Subscriber sub_position = nh.subscribe("/outtrigger/command", 100, commandCallback);
     // publisher
     ros::Publisher pub_info = nh.advertise<outtrigger::Info>("/outtrigger/info", 100);
     ros::Publisher pub_state = nh.advertise<outtrigger::State>("/outtrigger/state", 100);
