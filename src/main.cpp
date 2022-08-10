@@ -164,11 +164,11 @@ void commandCallback(const outtrigger::Command& command) {
 
     static double mm_out;
     mm_out = 0.0;
-    mm_out = (double)Com.kaPosition[0] / MOTOR_TICK / GEAR_RATIO * SCREW_LEAD;
+    mm_out = (double)Com.kaPosition[ID_OFFSET-command.command] / MOTOR_TICK / GEAR_RATIO * SCREW_LEAD;
     static double mm_sec_out;
     mm_sec_out = 0.0;
-    mm_sec_out = (double)Com.kaSpeed[0] / GEAR_RATIO * SCREW_LEAD / MIN_TO_SEC;
-    printf("[out] mm: %7.3f, mm_sec: %7.3f, pos: %10d, rpm: %5d\n", mm_out, mm_sec_out, Com.kaPosition[0], Com.kaSpeed[0]);
+    mm_sec_out = (double)Com.kaSpeed[ID_OFFSET-command.command] / GEAR_RATIO * SCREW_LEAD / MIN_TO_SEC;
+    printf("[out] mm: %7.3f, mm_sec: %7.3f, pos: %10d, rpm: %5d\n", mm_out, mm_sec_out, Com.kaPosition[ID_OFFSET-command.command], Com.kaSpeed[ID_OFFSET-command.command]);
 }
 
 void checkOuttrigger() {
@@ -345,7 +345,7 @@ int main(int argc, char** argv)
     ros::Subscriber sub_pidCommand = nh.subscribe("/outtrigger/pidCommand", 100, pidCommandCallback);
     ros::Subscriber sub_pidVelocity = nh.subscribe("/outtrigger/pidVelocity", 100, pidVelocityCallback);
     ros::Subscriber sub_pidPosition = nh.subscribe("/outtrigger/pidPosition", 100, pidPositionCallback);
-    ros::Subscriber sub_position = nh.subscribe("/outtrigger/command", 100, commandCallback);
+    ros::Subscriber sub_command = nh.subscribe("/outtrigger/command", 100, commandCallback);
     // publisher
     ros::Publisher pub_info = nh.advertise<outtrigger::Info>("/outtrigger/info", 100);
     ros::Publisher pub_state = nh.advertise<outtrigger::State>("/outtrigger/state", 100);

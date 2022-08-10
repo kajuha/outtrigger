@@ -649,16 +649,16 @@ int MdReceiveProc(void) //save the identified serial data to defined variable ac
             #endif
 
             #if 1
-            // printf("[PID_MAIN_DATA] kaType : %d\n", Com.kaType[0]);
-            // printf("[PID_MAIN_DATA] kaCtrlOutput : %d\n", Com.kaCtrlOutput[0]);
-            // printf("[PID_MAIN_DATA] kaStatus1 : %d\n", Com.kaStatus1[0]);
-            // printf("[PID_MAIN_DATA] kaBrake : %d\n", Com.kaBrake[0]);
-            // printf("[PID_MAIN_DATA] kaTemp : %d\n", Com.kaTemp[0]);
-            // printf("[PID_MAIN_DATA] kaStatus2 : %d\n", Com.kaStatus2[0]);
-            // printf("[PID_MAIN_DATA] kaSpeed : %d\n", Com.kaSpeed[0]);
-            // printf("[PID_MAIN_DATA] kaCurrent : %d\n", Com.kaCurrent[0]);
-            // printf("[PID_MAIN_DATA] kaRefSpeed : %d\n", Com.kaRefSpeed[0]);
-            printf("[PID_MAIN_DATA] kaPosition : %d\n", Com.kaPosition[0]);
+            // printf("[PID_MAIN_DATA] kaType : %d\n", Com.kaType[byRcvID-ID_OFFSET]);
+            // printf("[PID_MAIN_DATA] kaCtrlOutput : %d\n", Com.kaCtrlOutput[byRcvID-ID_OFFSET]);
+            // printf("[PID_MAIN_DATA] kaStatus1 : %d\n", Com.kaStatus1[byRcvID-ID_OFFSET]);
+            // printf("[PID_MAIN_DATA] kaBrake : %d\n", Com.kaBrake[byRcvID-ID_OFFSET]);
+            // printf("[PID_MAIN_DATA] kaTemp : %d\n", Com.kaTemp[byRcvID-ID_OFFSET]);
+            // printf("[PID_MAIN_DATA] kaStatus2 : %d\n", Com.kaStatus2[byRcvID-ID_OFFSET]);
+            // printf("[PID_MAIN_DATA] kaSpeed : %d\n", Com.kaSpeed[byRcvID-ID_OFFSET]);
+            // printf("[PID_MAIN_DATA] kaCurrent : %d\n", Com.kaCurrent[byRcvID-ID_OFFSET]);
+            // printf("[PID_MAIN_DATA] kaRefSpeed : %d\n", Com.kaRefSpeed[byRcvID-ID_OFFSET]);
+            printf("[PID_MAIN_DATA] kaPosition : %d\n", Com.kaPosition[byRcvID-ID_OFFSET]);
             #endif
 
             //ROS_INFO("%d  %d", Com.sCurrent[MOT_LEFT], Com.sCurrent[MOT_RIGHT]);
@@ -687,19 +687,19 @@ int MdReceiveProc(void) //save the identified serial data to defined variable ac
             Com.kaIntVolume[byRcvID-ID_OFFSET] = Com.byRcvBuf[21];
 
             #if 1
-            // printf("[PID_IO_MONITOR] kaSpeed : %d\n", Com.kaSpeed[0]);
-            // printf("[PID_IO_MONITOR] kaCurrent : %d\n", Com.kaCurrent[0]);
-            // printf("[PID_IO_MONITOR] kaStatus1 : %d\n", Com.kaStatus1[0]);
-            printf("[PID_IO_MONITOR] kaCtrlInput : %d\n", Com.kaCtrlInput[0]);
-            // printf("[PID_IO_MONITOR] kaExtVolume : %d\n", Com.kaExtVolume[0]);
-            // printf("[PID_IO_MONITOR] ka8PinDip : %d\n", Com.ka8PinDip[0]);
-            printf("[PID_IO_MONITOR] kaHallsensor : %d\n", Com.kaHallsensor[0]);
-            // printf("[PID_IO_MONITOR] kaStatus2 : %d\n", Com.kaStatus2[0]);
-            // printf("[PID_IO_MONITOR] kaSwInput : %d\n", Com.kaSwInput[0]);
-            // printf("[PID_IO_MONITOR] kaMainVol : %d\n", Com.kaMainVol[0]);
-            // printf("[PID_IO_MONITOR] kaSlowStart : %d\n", Com.kaSlowStart[0]);
-            // printf("[PID_IO_MONITOR] kaSlowDown : %d\n", Com.kaSlowDown[0]);
-            // printf("[PID_IO_MONITOR] kaIntVolume : %d\n", Com.kaIntVolume[0]);
+            // printf("[PID_IO_MONITOR] kaSpeed : %d\n", Com.kaSpeed[byRcvID-ID_OFFSET]);
+            // printf("[PID_IO_MONITOR] kaCurrent : %d\n", Com.kaCurrent[byRcvID-ID_OFFSET]);
+            // printf("[PID_IO_MONITOR] kaStatus1 : %d\n", Com.kaStatus1[byRcvID-ID_OFFSET]);
+            printf("[PID_IO_MONITOR] kaCtrlInput : %d\n", Com.kaCtrlInput[byRcvID-ID_OFFSET]);
+            // printf("[PID_IO_MONITOR] kaExtVolume : %d\n", Com.kaExtVolume[byRcvID-ID_OFFSET]);
+            // printf("[PID_IO_MONITOR] ka8PinDip : %d\n", Com.ka8PinDip[byRcvID-ID_OFFSET]);
+            printf("[PID_IO_MONITOR] kaHallsensor : %d\n", Com.kaHallsensor[byRcvID-ID_OFFSET]);
+            // printf("[PID_IO_MONITOR] kaStatus2 : %d\n", Com.kaStatus2[byRcvID-ID_OFFSET]);
+            // printf("[PID_IO_MONITOR] kaSwInput : %d\n", Com.kaSwInput[byRcvID-ID_OFFSET]);
+            // printf("[PID_IO_MONITOR] kaMainVol : %d\n", Com.kaMainVol[byRcvID-ID_OFFSET]);
+            // printf("[PID_IO_MONITOR] kaSlowStart : %d\n", Com.kaSlowStart[byRcvID-ID_OFFSET]);
+            // printf("[PID_IO_MONITOR] kaSlowDown : %d\n", Com.kaSlowDown[byRcvID-ID_OFFSET]);
+            // printf("[PID_IO_MONITOR] kaIntVolume : %d\n", Com.kaIntVolume[byRcvID-ID_OFFSET]);
             #endif
 
             #if 0
