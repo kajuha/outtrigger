@@ -138,7 +138,7 @@ void commandCallback(const outtrigger::Command& command) {
     static double mm_in;
     mm_in = command.mm;
     #define MIN_MM 0.0
-    #define MAX_MM 100.0
+    #define MAX_MM 200.0
     if (MIN_MM > mm_in || mm_in > MAX_MM) return;
     static double screw_rev;
     screw_rev = mm_in / SCREW_LEAD;
@@ -432,6 +432,14 @@ int main(int argc, char** argv)
             printf("spd");
             for (int i=0; i<MOTOR_NUM; i++) {
                 printf("[%+10d]", Com.kaSpeed[i]);
+            }
+            printf("\n");
+            #endif
+
+            #if 0
+            printf("cur");
+            for (int i=0; i<MOTOR_NUM; i++) {
+                printf("[%+10d]", Com.kaCurrent[i]);
             }
             printf("\n");
             #endif
