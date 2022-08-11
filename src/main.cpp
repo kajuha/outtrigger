@@ -419,6 +419,35 @@ int main(int argc, char** argv)
                 #endif
             }
             #endif
+
+            #if 1
+            printf("pos");
+            for (int i=0; i<MOTOR_NUM; i++) {
+                printf("[%+10d]", Com.kaPosition[i]);
+            }
+            printf("\n");
+            #endif
+
+            #if 1
+            printf("spd");
+            for (int i=0; i<MOTOR_NUM; i++) {
+                printf("[%+10d]", Com.kaSpeed[i]);
+            }
+            printf("\n");
+            #endif
+
+            #if 1
+            printf("ctl");
+            for (int i=0; i<MOTOR_NUM; i++) {
+                #define CTRL_BIT_LEN 10
+                printf("[");
+                for (int j=CTRL_BIT_LEN-1; j>=0; j--) {
+                    printf("%d", Com.kaCtrlInput[i]&(1<<j)?1:0);
+                }
+                printf("]");
+            }
+            printf("\n");
+            #endif
         }
         
         #if 0
