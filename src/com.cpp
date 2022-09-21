@@ -112,6 +112,8 @@ int InitSerial(void)
         ROS_INFO_STREAM("Serial Port initialized");
     else
         return -1;
+    
+    return 0;
 }
 
 int InitSetSlowStart(void)

@@ -13,6 +13,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   message_generation
   serial
+  painting_robot_msg
 )
 
 ## System dependencies are found with CMake's conventions
@@ -136,6 +137,7 @@ catkin_package(
 ## Your package locations should be listed before other locations
 include_directories(
 # include
+  src
   ${catkin_INCLUDE_DIRS}
 )
 

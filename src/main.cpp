@@ -2,6 +2,11 @@
 #include <boost/lockfree/queue.hpp>
 #include <std_msgs/Empty.h>
 
+#include <painting_robot_msg/OUTTRIGGER_Command_Info.h>
+#include <painting_robot_msg/OUTTRIGGER_Command.h>
+#include <painting_robot_msg/OUTTRIGGER_State_Info.h>
+#include <painting_robot_msg/OUTTRIGGER_State.h>
+
 #include "outtrigger/PidRequest.h"
 #include "outtrigger/PidCommand.h"
 #include "outtrigger/PidVelocity.h"
