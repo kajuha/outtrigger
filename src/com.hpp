@@ -3,6 +3,11 @@
 
 #include "main.hpp"
 
+#define OUTTRIGGER_FRONT_LEFT 0
+#define OUTTRIGGER_FRONT_RIGHT 1
+#define OUTTRIGGER_BACK_LEFT 2
+#define OUTTRIGGER_BACK_RIGHT 3
+
 #define MD_SEND_RPM         0
 #define MD_SET_POS          1
 #define MD_REQ_PID          2

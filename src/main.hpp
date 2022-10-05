@@ -4,6 +4,12 @@
 #include <ros/ros.h>
 #include <math.h>
 
+#include <outtrigger/States.h>
+#include <outtrigger/Infos.h>
+
+extern outtrigger::States outtriggerStates;
+extern outtrigger::Infos outtriggerInfos;
+
 extern int MOTOR_NUM;
 extern std::vector<double> inv_motor_in_arr;
 extern std::vector<double> inv_encoder_out_arr;

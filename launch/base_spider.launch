@@ -15,6 +15,7 @@
         <arg name="SCREW_LEAD" value="5.0"/>
         <arg name="TIMEOUT_SEC_MAIN" value="3.0"/>
         <arg name="TIMEOUT_SEC_IO" value="3.0"/>
+        <arg name="TIMEOUT_SEC_HOMING" value="3.0"/>
         <arg name="message_display" value="$(arg message_display)"/>
         <arg name="main_hz" value="$(arg main_hz)"/>
         <arg name="communication" value="$(arg communication)"/>

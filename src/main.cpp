@@ -11,10 +11,10 @@
 #include "outtrigger/PidCommand.h"
 #include "outtrigger/PidVelocity.h"
 #include "outtrigger/PidPosition.h"
-#include "outtrigger/Command.h"
+#include "outtrigger/Commands.h"
 
-#include "outtrigger/Info.h"
-#include "outtrigger/State.h"
+#include "outtrigger/Infos.h"
+#include "outtrigger/States.h"
 
 #include "global.hpp"
 #include "main.hpp"
@@ -28,10 +28,14 @@ double MOTOR_TICK;
 double SCREW_LEAD;
 double TIMEOUT_SEC_MAIN;
 double TIMEOUT_SEC_IO;
+double TIMEOUT_SEC_HOMING;
 std::vector<double> inv_motor_in_arr;
 std::vector<double> inv_encoder_out_arr;
 
 Communication Com;
+
+outtrigger::States outtriggerStates;
+outtrigger::Infos outtriggerInfos;
 
 #include <queue>
 
@@ -205,6 +209,7 @@ void checkOuttrigger() {
     }
     #endif
 
+    #if 0
     ts_now = ros::Time::now();
     for (int i=0; i<MOTOR_NUM; i++) {
         timeout = ts_now.toSec() - Com.kaTsLastIo[i].toSec();
@@ -212,6 +217,17 @@ void checkOuttrigger() {
             printf("invalid io data: #%d, timeout: %lf, SET_TIMEOUT: %lf\n", i, timeout, TIMEOUT_SEC_IO);
         }
     }
+    #endif
+
+    #if 0
+    ts_now = ros::Time::now();
+    for (int i=0; i<MOTOR_NUM; i++) {
+        timeout = ts_now.toSec() - Com.kaTsLastHoming[i].toSec();
+        if (timeout > TIMEOUT_SEC_HOMING) {
+            printf("invalid homing data: #%d, timeout: %lf, SET_TIMEOUT: %lf\n", i, timeout, TIMEOUT_SEC_HOMING);
+        }
+    }
+    #endif
 }
 
 void sendMsgMd1k(int* send_rate) {
@@ -283,6 +299,7 @@ int main(int argc, char** argv)
     ros::param::get("~SCREW_LEAD", SCREW_LEAD);
     ros::param::get("~TIMEOUT_SEC_MAIN", TIMEOUT_SEC_MAIN);
     ros::param::get("~TIMEOUT_SEC_IO", TIMEOUT_SEC_IO);
+    ros::param::get("~TIMEOUT_SEC_HOMING", TIMEOUT_SEC_HOMING);
     ros::param::get("~main_hz", main_hz);
     ros::param::get("~communication", com);
     ros::param::get("~inv_motor_in_arr", inv_motor_in_arr);
@@ -294,6 +311,7 @@ int main(int argc, char** argv)
     nh.getParam("SCREW_LEAD", SCREW_LEAD);
     nh.getParam("TIMEOUT_SEC_MAIN", TIMEOUT_SEC_MAIN);
     nh.getParam("TIMEOUT_SEC_IO", TIMEOUT_SEC_IO);
+    nh.getParam("TIMEOUT_SEC_HOMING", TIMEOUT_SEC_HOMING);
     nh.getParam("main_hz", main_hz);
     nh.getParam("communication", com);
     nh.getParam("inv_motor_in_arr", inv_motor_in_arr);
@@ -369,8 +387,8 @@ int main(int argc, char** argv)
     ros::Subscriber sub_pidPosition = nh.subscribe("/outtrigger/pidPosition", 100, pidPositionCallback);
     ros::Subscriber sub_command = nh.subscribe("/outtrigger/command", 100, commandCallback);
     // publisher
-    ros::Publisher pub_info = nh.advertise<outtrigger::Info>("/outtrigger/info", 100);
-    ros::Publisher pub_state = nh.advertise<outtrigger::State>("/outtrigger/state", 100);
+    ros::Publisher pub_infos = nh.advertise<outtrigger::Infos>("/outtrigger/infos", 100);
+    ros::Publisher pub_states = nh.advertise<outtrigger::States>("/outtrigger/states", 100);
 
     boost::thread threadSendMsgMd1k(sendMsgMd1k, &send_rate);
   
@@ -390,6 +408,10 @@ int main(int argc, char** argv)
     #else
     double QMSG_TS_PERIOD = 1;   // s
     #endif
+
+    double pub_time_pre = time_cur;
+    double pub_time_diff;
+    double PUB_TS_PERIOD = 0.1;
   
     if (Com.kaCom == "rs485") {
     } else {
@@ -414,6 +436,14 @@ int main(int argc, char** argv)
         if (Com.kaCom == "rs485") {
             ReceiveDataFromController();
         } else {
+        }
+
+        pub_time_diff = time_cur - pub_time_pre;
+        if (pub_time_diff > PUB_TS_PERIOD) {
+            pub_time_pre = time_cur;
+
+            pub_states.publish(outtriggerStates);
+            pub_infos.publish(outtriggerInfos);
         }
 
         // printf("%d, %lf \n", __LINE__, ros::Time::now().toSec());
