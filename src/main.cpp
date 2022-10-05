@@ -71,6 +71,13 @@ void pidRequestCallback(const outtrigger::PidRequest& pidRequest) {
             comData.nArray[0] = PID_MAIN_DATA;
             qarr.push(comData);
             break;
+        case (int)CmdMode::REQ_INIT_SET_OK:
+            // 상태피드백 확인용
+            comData.type = MD_REQ_PID;
+            comData.id = pidRequest.id;
+            comData.nArray[0] = PID_INIT_SET_OK;
+            qarr.push(comData);
+            break;
         default:
             printf("Unknown pidRequest.pid\n");
             break;
@@ -102,6 +109,14 @@ void pidCommandCallback(const outtrigger::PidCommand& pidCommand) {
             comData.type = MD_SET_POS;
             comData.id = pidCommand.id;
             comData.position = 0;
+            qarr.push(comData);
+            break;
+        case (int)CmdMode::CMD_INIT_SET2:
+            // 모터 위치 리셋
+            comData.type = MD_CMD_INIT;
+            comData.id = pidCommand.id;
+            comData.pid = PID_COMMAND;
+            comData.nArray[0] = PID_CMD_INIT_SET2;
             qarr.push(comData);
             break;
         default:
@@ -231,6 +246,8 @@ void sendMsgMd1k(int* send_rate) {
                 } else if (comData.type == MD_OFF) {
                     break;
                 } else if (comData.type == MD_CMD_PID) {
+                    PutMdData(comData.pid, Com.nRMID, comData);
+                } else if (comData.type == MD_CMD_INIT) {
                     PutMdData(comData.pid, Com.nRMID, comData);
                 } else {
                     printf("Unknown ComData.type : %d\n", comData.type);
@@ -408,10 +425,10 @@ int main(int argc, char** argv)
             #if 1
             for (int i=0; i<MOTOR_NUM; i++) {
                 #if 1
-                // CTRL 입력확인용
+                // Homing 확인용
                 comData.type = MD_REQ_PID;
                 comData.id = i+ID_OFFSET;
-                comData.nArray[0] = PID_IO_MONITOR;
+                comData.nArray[0] = PID_INIT_SET_OK;
                 qarr.push(comData);
                 #endif
 
@@ -425,7 +442,7 @@ int main(int argc, char** argv)
             }
             #endif
 
-            #if 1
+            #if 0
             printf("pos");
             for (int i=0; i<MOTOR_NUM; i++) {
                 printf("[%+10d]", Com.kaPosition[i]);
@@ -433,7 +450,7 @@ int main(int argc, char** argv)
             printf("\n");
             #endif
 
-            #if 1
+            #if 0
             printf("spd");
             for (int i=0; i<MOTOR_NUM; i++) {
                 printf("[%+10d]", Com.kaSpeed[i]);
@@ -449,15 +466,10 @@ int main(int argc, char** argv)
             printf("\n");
             #endif
 
-            #if 1
-            printf("ctl");
+            #if 0
+            printf("hom");
             for (int i=0; i<MOTOR_NUM; i++) {
-                #define CTRL_BIT_LEN 10
-                printf("[");
-                for (int j=CTRL_BIT_LEN-1; j>=0; j--) {
-                    printf("%d", Com.kaCtrlInput[i]&(1<<j)?1:0);
-                }
-                printf("]");
+                printf("[%+10d]", Com.kaHomingDone[i]);
             }
             printf("\n");
             #endif

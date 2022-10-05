@@ -205,8 +205,6 @@ int PutMdData(BYTE byPID, BYTE byMID, ComData comData)
             ser.write(Com.bySndBuf, byPidDataSize);
 
             break;
-        #if 0
-        // DEPRECATED
 		// 명령 요청
         case PID_COMMAND:
 
@@ -215,7 +213,7 @@ int PutMdData(BYTE byPID, BYTE byMID, ComData comData)
             byTempDataSum   = 0;
 
             Com.bySndBuf[4] = byDataSize;
-            Com.bySndBuf[5] = (BYTE)nArray[0];
+            Com.bySndBuf[5] = (BYTE)comData.nArray[0];
 
             for(i = 0; i < (byPidDataSize-1); i++) byTempDataSum += Com.bySndBuf[i];
             Com.bySndBuf[byPidDataSize-1] = ~(byTempDataSum) + 1; //check sum
@@ -223,7 +221,6 @@ int PutMdData(BYTE byPID, BYTE byMID, ComData comData)
             ser.write(Com.bySndBuf, byPidDataSize);
 
             break;
-        #endif
 		// 위치값 리셋
         case PID_POSI_RESET:
 
@@ -517,7 +514,7 @@ int PutMdData(BYTE byPID, BYTE byMID, ComData comData)
             break;
         #endif
         default:
-            printf("Unknown PID : %d\n", byPID);
+            printf("Unknown send PID : %d\n", byPID);
             break;
     }
 
@@ -602,6 +599,15 @@ int MdReceiveProc(void) //save the identified serial data to defined variable ac
             }
             break;
         #endif
+        // 모터 드라이버를 위한 데이터
+        case PID_INIT_SET_OK: //87
+            Com.kaTsLastHoming[byRcvID-ID_OFFSET] = ros::Time::now();
+            Com.kaHomingDone[byRcvID-ID_OFFSET] = Com.byRcvBuf[5];
+
+            #if 0
+            printf("received len[%d]PID_INIT_SET_OK : %02x\n", byRcvDataSize, Com.byRcvBuf[5]);
+            #endif
+            break;
         // 모터 드라이버를 위한 데이터
         case PID_MAIN_DATA: //193
             Com.kaTsLast[byRcvID-ID_OFFSET] = ros::Time::now();
@@ -816,7 +822,7 @@ int MdReceiveProc(void) //save the identified serial data to defined variable ac
             printf("PID_IN_POSITION_OK : %d\n", Com.byRcvBuf[5]);
             break;
         default:
-            printf("Uknown PID: %d\n", byRcvPID);
+            printf("Unknown recv PID: %d\n", byRcvPID);
             break;
     }
     return SUCCESS;

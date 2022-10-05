@@ -8,6 +8,7 @@
 #define MD_REQ_PID          2
 #define MD_OFF              3
 #define MD_CMD_PID          4
+#define MD_CMD_INIT         5
 
 #define ID_BLDC_CTRL        1
 #define ID_MDUI             2
@@ -22,10 +23,12 @@
 #define PID_COMMAND         10
 #define PID_CMD_TQ_OFF      2
 #define PID_CMD_BRAKE       4
-#define PIC_CMD_POSI_RESET  10
+#define PID_CMD_POSI_RESET  10
+#define PID_CMD_INIT_SET2   90
 
 #define PID_POSI_RESET      13
 #define PID_IN_POSITION_OK  49
+#define PID_INIT_SET_OK     87
 // #define PID_BAUDRATE        135  // DEPRECATED
 // #define PID_VOLT_IN         143  // DEPRECATED
 #define PID_SLOW_START      153
@@ -127,6 +130,7 @@ class Communication {
     std::vector<BYTE> kaTemp;
     std::vector<ros::Time> kaTsLast;
     std::vector<ros::Time> kaTsLastIo;
+    std::vector<ros::Time> kaTsLastHoming;
     std::vector<int> kaSetPosition;
     std::vector<BYTE> kaStatus2;
     std::vector<BYTE> kaCtrlInput;
@@ -138,6 +142,8 @@ class Communication {
     std::vector<BYTE> kaSlowStart;
     std::vector<BYTE> kaSlowDown;
     std::vector<BYTE> kaIntVolume;
+
+    std::vector<BYTE> kaHomingDone;
     string kaCom;
 
     public:
@@ -156,6 +162,7 @@ class Communication {
         kaTemp = std::vector<BYTE>(motor_num);
         kaTsLast = std::vector<ros::Time>(motor_num);
         kaTsLastIo = std::vector<ros::Time>(motor_num);
+        kaTsLastHoming = std::vector<ros::Time>(motor_num);
         kaSetPosition = std::vector<int>(motor_num);
         kaStatus2 = std::vector<BYTE>(motor_num);
         kaCtrlInput = std::vector<BYTE>(motor_num);
@@ -167,6 +174,7 @@ class Communication {
         kaSlowStart = std::vector<BYTE>(motor_num);
         kaSlowDown = std::vector<BYTE>(motor_num);
         kaIntVolume = std::vector<BYTE>(motor_num);
+        kaHomingDone = std::vector<BYTE>(motor_num);
     }
 
     ~Communication() {
