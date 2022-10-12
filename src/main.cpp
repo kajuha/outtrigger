@@ -27,8 +27,11 @@ double GEAR_RATIO;
 double MOTOR_TICK;
 double SCREW_LEAD;
 double TIMEOUT_SEC_MAIN;
-double TIMEOUT_SEC_IO;
 double TIMEOUT_SEC_HOMING;
+double MIN_MM;
+double MAX_MM;
+double MIN_MM_PER_SEC;
+double MAX_MM_PER_SEC;
 std::vector<double> inv_motor_in_arr;
 std::vector<double> inv_encoder_out_arr;
 
@@ -44,7 +47,7 @@ boost::lockfree::queue<ComData> qarr(LOCKFREE_QUEUE_SIZE);
 
 void pidRequestCallback(const outtrigger::PidRequest& pidRequest) {
     static ComData comData;
-        
+
     switch (pidRequest.pid) {
         case (int)CmdMode::REQ_VER:
             // VERSION 확인
@@ -90,7 +93,7 @@ void pidRequestCallback(const outtrigger::PidRequest& pidRequest) {
 
 void pidCommandCallback(const outtrigger::PidCommand& pidCommand) {
     static ComData comData;
-        
+
     switch (pidCommand.pid) {
         case (int)CmdMode::CMD_BRAKE:
             // 전기적 브레이크 정지(전기적 브레이크 정지)
@@ -131,7 +134,7 @@ void pidCommandCallback(const outtrigger::PidCommand& pidCommand) {
 
 void pidVelocityCallback(const outtrigger::PidVelocity& pidVelocity) {
     static ComData comData;
-    
+
     // PID_PNT_VEL_CMD 확인
     comData.type = MD_SEND_RPM;
     comData.id = pidVelocity.id;
@@ -158,11 +161,10 @@ void commandCallback(const outtrigger::Command& command) {
     comData.type = MD_CMD_PID;
     comData.id = command.command;
     comData.pid = PID_PNT_POS_VEL_CMD;
-    #define MIN_TO_SEC 60.0
+
     static double mm_in;
     mm_in = command.mm;
-    #define MIN_MM 0.0
-    #define MAX_MM 200.0
+
     if (MIN_MM > mm_in || mm_in > MAX_MM) return;
     static double screw_rev;
     screw_rev = mm_in / SCREW_LEAD;
@@ -173,8 +175,7 @@ void commandCallback(const outtrigger::Command& command) {
     comData.position = (int)encoder;
     static double mm_sec_in;
     mm_sec_in = command.mm_per_sec;   // 10 mm/s = 1200 rpm
-    #define MIN_MM_PER_SEC 0.0
-    #define MAX_MM_PER_SEC 20.0
+
     if (MIN_MM_PER_SEC > mm_sec_in || mm_sec_in > MAX_MM_PER_SEC) return;
     static double mm_min;
     mm_min = mm_sec_in * MIN_TO_SEC;
@@ -183,7 +184,9 @@ void commandCallback(const outtrigger::Command& command) {
     static double gear_rev_min;
     gear_rev_min = screw_rev_min * GEAR_RATIO;
     comData.rpm = gear_rev_min;
+    #if 0
     printf("[in ] mm: %7.3f, mm_sec: %7.3f, pos: %10d, rpm: %5d\n", mm_in, mm_sec_in, comData.position, comData.rpm);
+    #endif
     qarr.push(comData);
 
     static double mm_out;
@@ -192,7 +195,210 @@ void commandCallback(const outtrigger::Command& command) {
     static double mm_sec_out;
     mm_sec_out = 0.0;
     mm_sec_out = (double)Com.kaSpeed[ID_OFFSET-command.command] / GEAR_RATIO * SCREW_LEAD / MIN_TO_SEC;
+    #if 0
     printf("[out] mm: %7.3f, mm_sec: %7.3f, pos: %10d, rpm: %5d\n", mm_out, mm_sec_out, Com.kaPosition[ID_OFFSET-command.command], Com.kaSpeed[ID_OFFSET-command.command]);
+    #endif
+}
+
+void commandsCallback(const outtrigger::Commands& commands) {
+    static ComData comData;
+
+    static std::vector<outtrigger::Command> command = std::vector<outtrigger::Command>(MOTOR_NUM);
+    static std::vector<outtrigger::Info> info = std::vector<outtrigger::Info>(MOTOR_NUM);
+
+    static int motor_id;
+    static double mm_in;
+    static double screw_rev;
+    static double gear_rev;
+    static double encoder;
+    static double mm_sec_in;
+    static double mm_min;
+    static double screw_rev_min;
+    static double gear_rev_min;
+    static double time_diff;
+
+    command[OUTTRIGGER_FRONT_LEFT] = commands.frontLeft;
+    command[OUTTRIGGER_FRONT_RIGHT] = commands.frontRight;
+    command[OUTTRIGGER_BACK_LEFT] = commands.backLeft;
+    command[OUTTRIGGER_BACK_RIGHT] = commands.backRight;
+
+    info[OUTTRIGGER_FRONT_LEFT] = outtriggerInfos.frontLeft;
+    info[OUTTRIGGER_FRONT_RIGHT] = outtriggerInfos.frontRight;
+    info[OUTTRIGGER_BACK_LEFT] = outtriggerInfos.backLeft;
+    info[OUTTRIGGER_BACK_RIGHT] = outtriggerInfos.backRight;
+
+    for (int i=0; i<command.size(); i++) {
+        motor_id = ID_OFFSET + i;
+        #if 0
+        printf("motor_id : %d\n", motor_id);
+        #endif
+
+#define ESTOP -2
+#define STOP -1
+#define NO_ACTION 0
+#define VELOCITY 1
+#define POSITION 2
+#define HOMING 3
+#define ERROR_CLEAR 4
+        switch (command[i].command) {
+            case ESTOP:
+                comData.type = MD_CMD_PID;
+                comData.id = motor_id;
+                comData.pid = PID_BRAKE;
+                comData.nArray[0] = 0;
+                qarr.push(comData);
+                break;
+            case STOP:
+                comData.type = MD_CMD_PID;
+                comData.id = motor_id;
+                comData.pid = PID_TQ_OFF;
+                comData.nArray[0] = 0;
+                qarr.push(comData);
+                break;
+            case NO_ACTION:
+                break;
+            case VELOCITY:
+                if (command[i].mm == 12345.67890 && command[i].mm_per_sec < 0.0) {
+                    printf("manual velocity[%d] control : %lf rpm\n", i, command[i].mm_per_sec);
+                    comData.type = MD_SEND_RPM;
+                    comData.id = motor_id;
+                    comData.rpm = (int)command[i].mm_per_sec;
+                    qarr.push(comData);
+
+                    break;
+                }
+                
+                time_diff = ros::Time::now().toSec() - info[i].header.stamp.toSec();
+                if (time_diff > TIMEOUT_SEC_HOMING) {
+                    printf("velocity[%d] time invalid : timd_diff : %lf\n", i, time_diff);
+                    break;
+                }
+
+                if (info[i].homing) {
+                    comData.type = MD_CMD_PID;
+                    comData.id = motor_id;
+                    comData.pid = PID_PNT_POS_VEL_CMD;
+
+                    mm_sec_in = command[i].mm_per_sec;   // 10 mm/s = 1200 rpm
+                    if (mm_sec_in < 0.0) { 
+                        mm_in = MIN_MM;
+                        mm_sec_in *= -1.0;
+                    } else {
+                        mm_in = MAX_MM;
+                        mm_sec_in *= 1.0;
+                    }
+
+                    screw_rev = mm_in / SCREW_LEAD;
+                    gear_rev = screw_rev * GEAR_RATIO;
+                    encoder = gear_rev * MOTOR_TICK;
+                    comData.position = (int)encoder;
+
+                    if (MIN_MM_PER_SEC > mm_sec_in || mm_sec_in > MAX_MM_PER_SEC) break;
+                    mm_min = mm_sec_in * MIN_TO_SEC;
+                    screw_rev_min = mm_min / SCREW_LEAD;
+                    gear_rev_min = screw_rev_min * GEAR_RATIO;
+                    comData.rpm = gear_rev_min;
+                    #if 1
+                    printf("[in ] mm: %7.3f, mm_sec: %7.3f, pos: %10d, rpm: %5d\n", mm_in, mm_sec_in, comData.position, comData.rpm);
+                    #endif
+                    qarr.push(comData);
+                } else {
+                    printf("velocity command[%d] fail : no homing\n", i);
+                }
+
+                break;
+            case POSITION:
+                time_diff = ros::Time::now().toSec() - info[i].header.stamp.toSec();
+                if (time_diff > TIMEOUT_SEC_HOMING) {
+                    printf("position[%d] time invalid : timd_diff : %lf\n", i, time_diff);
+                    break;
+                }
+
+                if (info[i].homing) {
+                    comData.type = MD_CMD_PID;
+                    comData.id = motor_id;
+                    comData.pid = PID_PNT_POS_VEL_CMD;
+
+                    mm_in = command[i].mm;
+
+                    if (MIN_MM > mm_in || mm_in > MAX_MM) break;
+                    screw_rev = mm_in / SCREW_LEAD;
+                    gear_rev = screw_rev * GEAR_RATIO;
+                    encoder = gear_rev * MOTOR_TICK;
+                    comData.position = (int)encoder;
+                    mm_sec_in = command[i].mm_per_sec;   // 10 mm/s = 1200 rpm
+
+                    if (MIN_MM_PER_SEC > mm_sec_in || mm_sec_in > MAX_MM_PER_SEC) break;
+                    mm_min = mm_sec_in * MIN_TO_SEC;
+                    screw_rev_min = mm_min / SCREW_LEAD;
+                    gear_rev_min = screw_rev_min * GEAR_RATIO;
+                    comData.rpm = gear_rev_min;
+                    #if 0
+                    printf("[in ] mm: %7.3f, mm_sec: %7.3f, pos: %10d, rpm: %5d\n", mm_in, mm_sec_in, comData.position, comData.rpm);
+                    #endif
+                    qarr.push(comData);
+                } else {
+                    printf("position command[%d] fail : no homing\n", i);
+                }
+
+                break;
+            case HOMING:
+                comData.type = MD_CMD_INIT;
+                comData.id = motor_id;
+                comData.pid = PID_COMMAND;
+                comData.nArray[0] = PID_CMD_INIT_SET2;
+                qarr.push(comData);
+
+                switch (i) {
+                    case OUTTRIGGER_FRONT_LEFT:
+                        outtriggerInfos.frontLeft.state = 0;
+                        break;
+                    case OUTTRIGGER_FRONT_RIGHT:
+                        outtriggerInfos.frontRight.state = 0;
+                        break;
+                    case OUTTRIGGER_BACK_LEFT:
+                        outtriggerInfos.backLeft.state = 0;
+                        break;
+                    case OUTTRIGGER_BACK_RIGHT:
+                        outtriggerInfos.backRight.state = 0;
+                        break;
+                    default:
+                        printf("unknown homing id: %d\n", i);
+                        break;
+                }
+
+                break;
+            case ERROR_CLEAR:
+                comData.type = MD_CMD_INIT;
+                comData.id = motor_id;
+                comData.pid = PID_COMMAND;
+                comData.nArray[0] = PID_CMD_ALARM_RESET;
+                qarr.push(comData);
+
+                switch (i) {
+                    case OUTTRIGGER_FRONT_LEFT:
+                        outtriggerInfos.frontLeft.state = 0;
+                        break;
+                    case OUTTRIGGER_FRONT_RIGHT:
+                        outtriggerInfos.frontRight.state = 0;
+                        break;
+                    case OUTTRIGGER_BACK_LEFT:
+                        outtriggerInfos.backLeft.state = 0;
+                        break;
+                    case OUTTRIGGER_BACK_RIGHT:
+                        outtriggerInfos.backRight.state = 0;
+                        break;
+                    default:
+                        printf("unknown error_clear id: %d\n", i);
+                        break;
+                }
+
+                break;
+            default:
+                printf("unknown commands.command : %d\n", command[i].command);
+                break;
+        }
+    }
 }
 
 void checkOuttrigger() {
@@ -205,16 +411,6 @@ void checkOuttrigger() {
         timeout = ts_now.toSec() - Com.kaTsLast[i].toSec();
         if (timeout > TIMEOUT_SEC_MAIN) {
             printf("invalid main data: #%d, timeout: %lf, SET_TIMEOUT: %lf\n", i, timeout, TIMEOUT_SEC_MAIN);
-        }
-    }
-    #endif
-
-    #if 0
-    ts_now = ros::Time::now();
-    for (int i=0; i<MOTOR_NUM; i++) {
-        timeout = ts_now.toSec() - Com.kaTsLastIo[i].toSec();
-        if (timeout > TIMEOUT_SEC_IO) {
-            printf("invalid io data: #%d, timeout: %lf, SET_TIMEOUT: %lf\n", i, timeout, TIMEOUT_SEC_IO);
         }
     }
     #endif
@@ -285,7 +481,7 @@ int main(int argc, char** argv)
 
     int main_hz;
     string com;
-    
+
     printf("boost::lockfree::queue is ");
     if (!qarr.is_lock_free())
         printf("not ");
@@ -298,8 +494,11 @@ int main(int argc, char** argv)
     ros::param::get("~MOTOR_TICK", MOTOR_TICK);
     ros::param::get("~SCREW_LEAD", SCREW_LEAD);
     ros::param::get("~TIMEOUT_SEC_MAIN", TIMEOUT_SEC_MAIN);
-    ros::param::get("~TIMEOUT_SEC_IO", TIMEOUT_SEC_IO);
     ros::param::get("~TIMEOUT_SEC_HOMING", TIMEOUT_SEC_HOMING);
+    ros::param::get("~MIN_MM", MIN_MM);
+    ros::param::get("~MAX_MM", MAX_MM);
+    ros::param::get("~MIN_MM_PER_SEC", MIN_MM_PER_SEC);
+    ros::param::get("~MAX_MM_PER_SEC", MAX_MM_PER_SEC);
     ros::param::get("~main_hz", main_hz);
     ros::param::get("~communication", com);
     ros::param::get("~inv_motor_in_arr", inv_motor_in_arr);
@@ -310,8 +509,11 @@ int main(int argc, char** argv)
     nh.getParam("MOTOR_TICK", MOTOR_TICK);
     nh.getParam("SCREW_LEAD", SCREW_LEAD);
     nh.getParam("TIMEOUT_SEC_MAIN", TIMEOUT_SEC_MAIN);
-    nh.getParam("TIMEOUT_SEC_IO", TIMEOUT_SEC_IO);
     nh.getParam("TIMEOUT_SEC_HOMING", TIMEOUT_SEC_HOMING);
+    nh.getParam("MIN_MM", MIN_MM);
+    nh.getParam("MAX_MM", MAX_MM);
+    nh.getParam("MIN_MM_PER_SEC", MIN_MM_PER_SEC);
+    nh.getParam("MAX_MM_PER_SEC", MAX_MM_PER_SEC);
     nh.getParam("main_hz", main_hz);
     nh.getParam("communication", com);
     nh.getParam("inv_motor_in_arr", inv_motor_in_arr);
@@ -332,7 +534,7 @@ int main(int argc, char** argv)
 
     if (inv_motor_in_arr.size() != MOTOR_NUM || inv_encoder_out_arr.size() != MOTOR_NUM) {
         ROS_ERROR("wrong rosparam: PARAM element size(inv_motor(encoder)_in_arr) isn't matching PARAM size(MOTOR_NUM)");
-        
+
         return -1;
     }
 
@@ -374,24 +576,28 @@ int main(int argc, char** argv)
     unsigned int cntOffSec = 0;
 
     int send_rate = 200; // Hz
-  
+
     if (Com.kaCom == "rs485") {
     } else {
     }
 
     // topic
     // subscriber
+    #if 0
     ros::Subscriber sub_pidRequest = nh.subscribe("/outtrigger/pidRequest", 100, pidRequestCallback);
     ros::Subscriber sub_pidCommand = nh.subscribe("/outtrigger/pidCommand", 100, pidCommandCallback);
     ros::Subscriber sub_pidVelocity = nh.subscribe("/outtrigger/pidVelocity", 100, pidVelocityCallback);
     ros::Subscriber sub_pidPosition = nh.subscribe("/outtrigger/pidPosition", 100, pidPositionCallback);
     ros::Subscriber sub_command = nh.subscribe("/outtrigger/command", 100, commandCallback);
+    #else
+    ros::Subscriber sub_command = nh.subscribe("/outtrigger/command", 100, commandsCallback);
+    #endif
     // publisher
-    ros::Publisher pub_infos = nh.advertise<outtrigger::Infos>("/outtrigger/infos", 100);
-    ros::Publisher pub_states = nh.advertise<outtrigger::States>("/outtrigger/states", 100);
+    ros::Publisher pub_info = nh.advertise<outtrigger::Infos>("/outtrigger/info", 100);
+    ros::Publisher pub_state = nh.advertise<outtrigger::States>("/outtrigger/state", 100);
 
     boost::thread threadSendMsgMd1k(sendMsgMd1k, &send_rate);
-  
+
     if (Com.kaCom == "rs485") {
         InitSerial();
     } else {
@@ -412,7 +618,7 @@ int main(int argc, char** argv)
     double pub_time_pre = time_cur;
     double pub_time_diff;
     double PUB_TS_PERIOD = 0.1;
-  
+
     if (Com.kaCom == "rs485") {
     } else {
     }
@@ -420,7 +626,7 @@ int main(int argc, char** argv)
     ros::Rate r(main_hz);
 
     ros::Time ts_now;
-    
+
     ts_now = ros::Time::now();
     for (int i=0; i<MOTOR_NUM; i++) {
         Com.kaTsLast[i] = ts_now;
@@ -442,8 +648,8 @@ int main(int argc, char** argv)
         if (pub_time_diff > PUB_TS_PERIOD) {
             pub_time_pre = time_cur;
 
-            pub_states.publish(outtriggerStates);
-            pub_infos.publish(outtriggerInfos);
+            pub_state.publish(outtriggerStates);
+            pub_info.publish(outtriggerInfos);
         }
 
         // printf("%d, %lf \n", __LINE__, ros::Time::now().toSec());
@@ -504,7 +710,7 @@ int main(int argc, char** argv)
             printf("\n");
             #endif
         }
-        
+
         #if 0
         checkOuttrigger();
         #endif

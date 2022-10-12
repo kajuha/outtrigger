@@ -4,8 +4,11 @@
     <arg name="MOTOR_TICK" doc="MOTOR_TICK"/>
     <arg name="SCREW_LEAD" doc="SCREW_LEAD"/>
     <arg name="TIMEOUT_SEC_MAIN" doc="TIMEOUT_SEC_MAIN"/>
-    <arg name="TIMEOUT_SEC_IO" doc="TIMEOUT_SEC_IO"/>
     <arg name="TIMEOUT_SEC_HOMING" doc="TIMEOUT_SEC_HOMING"/>
+    <arg name="MIN_MM" doc="MIN_MM"/>
+    <arg name="MAX_MM" doc="MAX_MM"/>
+    <arg name="MIN_MM_PER_SEC" doc="MIN_MM_PER_SEC"/>
+    <arg name="MAX_MM_PER_SEC" doc="MAX_MM_PER_SEC"/>
     <arg name="message_display" default="screen" doc="output type"/>
     <arg name="main_hz" default="1000" doc="main loop herz"/>
     <arg name="communication" default="rs485" doc="communication"/>
@@ -29,8 +32,11 @@
         <param name="MOTOR_TICK" value="$(arg MOTOR_TICK)"/>
         <param name="SCREW_LEAD" value="$(arg SCREW_LEAD)"/>
         <param name="TIMEOUT_SEC_MAIN" value="$(arg TIMEOUT_SEC_MAIN)"/>
-        <param name="TIMEOUT_SEC_IO" value="$(arg TIMEOUT_SEC_IO)"/>
         <param name="TIMEOUT_SEC_HOMING" value="$(arg TIMEOUT_SEC_HOMING)"/>
+        <param name="MIN_MM" value="$(arg MIN_MM)"/>
+        <param name="MAX_MM" value="$(arg MAX_MM)"/>
+        <param name="MIN_MM_PER_SEC" value="$(arg MIN_MM_PER_SEC)"/>
+        <param name="MAX_MM_PER_SEC" value="$(arg MAX_MM_PER_SEC)"/>
         <param name="main_hz" value="$(arg main_hz)"/>
         <param name="communication" value="$(arg communication)"/>
         <rosparam param="inv_motor_in_arr" subst_value="true">$(arg inv_motor_in_arr)</rosparam>

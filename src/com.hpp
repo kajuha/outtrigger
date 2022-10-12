@@ -28,6 +28,7 @@
 #define PID_COMMAND         10
 #define PID_CMD_TQ_OFF      2
 #define PID_CMD_BRAKE       4
+#define PID_CMD_ALARM_RESET 8
 #define PID_CMD_POSI_RESET  10
 #define PID_CMD_INIT_SET2   90
 
