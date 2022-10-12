@@ -306,7 +306,7 @@ void commandsCallback(const painting_robot_msg::OUTTRIGGER_Command& commands) {
                     screw_rev_min = mm_min / SCREW_LEAD;
                     gear_rev_min = screw_rev_min * GEAR_RATIO;
                     comData.rpm = gear_rev_min;
-                    #if 1
+                    #if 0
                     printf("[in ] mm: %7.3f, mm_sec: %7.3f, pos: %10d, rpm: %5d\n", mm_in, mm_sec_in, comData.position, comData.rpm);
                     #endif
                     qarr.push(comData);
@@ -507,7 +507,7 @@ void commandsCallback(const outtrigger::Commands& commands) {
                     screw_rev_min = mm_min / SCREW_LEAD;
                     gear_rev_min = screw_rev_min * GEAR_RATIO;
                     comData.rpm = gear_rev_min;
-                    #if 1
+                    #if 0
                     printf("[in ] mm: %7.3f, mm_sec: %7.3f, pos: %10d, rpm: %5d\n", mm_in, mm_sec_in, comData.position, comData.rpm);
                     #endif
                     qarr.push(comData);
