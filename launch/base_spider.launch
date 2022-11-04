@@ -3,7 +3,7 @@
     <arg name="message_display" default="screen" doc="output type"/>
     <arg name="main_hz" default="1000" doc="main loop herz"/>
     <arg name="communication" default="rs485" doc="communication"/>
-    <arg name="serial_port" default="/dev/recipe.driver.md1k.all" doc="serial_port"/>
+    <arg name="serial_port" default="/dev/recipe.driver.outtrigger" doc="serial_port"/>
     <arg name="baudrate" default="115200" doc="baudrate"/>
     <arg name="inv_motor_in_arr" default="[1.0, 1.0, 1.0, 1.0]" doc="inv_motor_in_arr"/>
     <arg name="inv_encoder_out_arr" default="[1.0, 1.0, 1.0, 1.0]" doc="inv_encoder_out_arr"/>
