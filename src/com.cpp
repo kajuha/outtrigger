@@ -1326,6 +1326,8 @@ int AnalyzeReceivedData(BYTE byArray[], BYTE byBufNum) //Analyze the communicati
                     Com.fgComDataChk = 1;
                     Com.byDataNum    = 0;
                     Com.byMaxDataNum = 0;
+                } else {
+                    printf("[ts:%lf] checksum error\n", ros::Time::now().toSec());
                 }
 
                 Com.byStep = 0;
