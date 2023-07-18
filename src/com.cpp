@@ -180,6 +180,10 @@ int PutMdData(BYTE byPID, BYTE byMID, ComData comData)
             #endif
 
             ser.write(Com.bySndBuf, byPidDataSize);
+            if (comData.nArray[0] == PID_MAIN_DATA) {
+                Com.kaTxTsMainOld[comData.id-ID_OFFSET] = Com.kaTxTsMain[comData.id-ID_OFFSET];
+                Com.kaTxTsMain[comData.id-ID_OFFSET] = ros::Time::now();
+            }
 
             break;
 		// 데이터 요청
@@ -385,6 +389,38 @@ int PutMdData(BYTE byPID, BYTE byMID, ComData comData)
             Com.bySndBuf[17] = 0;
             Com.bySndBuf[18] = 0;
             Com.bySndBuf[19] = REQUEST_PNT_MAIN_DATA;
+
+            for(i = 0; i < (byPidDataSize-1); i++) byTempDataSum += Com.bySndBuf[i];
+            Com.bySndBuf[byPidDataSize-1] = ~(byTempDataSum) + 1; //check sum
+
+            #if 0
+            printf("send: ");
+            for (int idx=0; idx<byPidDataSize; idx++) {
+                printf("%02x ", Com.bySndBuf[idx]);
+            }
+            printf("\n");
+            #endif
+
+            ser.write(Com.bySndBuf, byPidDataSize);
+
+            break;
+        case PID_POSI_VEL_CMD:
+
+            byDataSize    = 6;
+            byPidDataSize = 12;
+            byTempDataSum = 0;
+
+            iData = Short2Byte((short)comData.rpm);
+
+            Com.bySndBuf[4]  = byDataSize;
+            pPosition = (char*)&comData.position;
+            Com.bySndBuf[5]  = pPosition[0];
+            Com.bySndBuf[6]  = pPosition[1];
+            Com.bySndBuf[7]  = pPosition[2];
+            Com.bySndBuf[8]  = pPosition[3];
+            pRpm = (char*)&comData.rpm;
+            Com.bySndBuf[9]  = pRpm[0];
+            Com.bySndBuf[10]  = pRpm[1];
 
             for(i = 0; i < (byPidDataSize-1); i++) byTempDataSum += Com.bySndBuf[i];
             Com.bySndBuf[byPidDataSize-1] = ~(byTempDataSum) + 1; //check sum
@@ -608,25 +644,29 @@ int MdReceiveProc(void) //save the identified serial data to defined variable ac
         #endif
         // 모터 드라이버를 위한 데이터
         case PID_INIT_SET_OK: //87
-            Com.kaTsLastHoming[byRcvID-ID_OFFSET] = ros::Time::now();
+            Com.kaRxTsHoming[byRcvID-ID_OFFSET] = ros::Time::now();
+            #if 0
             Com.kaHomingDone[byRcvID-ID_OFFSET] = Com.byRcvBuf[5];
+            #else
+            Com.kaHomingDone[byRcvID-ID_OFFSET] = Com.byRcvBuf[5] + override_homing;
+            #endif
 
             #ifdef KIRO_MSG
             switch(byRcvID-ID_OFFSET) {
                 case OUTTRIGGER_FRONT_LEFT:
-                    outtriggerInfos.frontLeft.Header.stamp = Com.kaTsLastHoming[byRcvID-ID_OFFSET];
+                    outtriggerInfos.frontLeft.Header.stamp = Com.kaRxTsHoming[byRcvID-ID_OFFSET];
                     outtriggerInfos.frontLeft.Homming = Com.kaHomingDone[byRcvID-ID_OFFSET];
                     break;
                 case OUTTRIGGER_FRONT_RIGHT:
-                    outtriggerInfos.frontRight.Header.stamp = Com.kaTsLastHoming[byRcvID-ID_OFFSET];
+                    outtriggerInfos.frontRight.Header.stamp = Com.kaRxTsHoming[byRcvID-ID_OFFSET];
                     outtriggerInfos.frontRight.Homming = Com.kaHomingDone[byRcvID-ID_OFFSET];
                     break;
                 case OUTTRIGGER_BACK_LEFT:
-                    outtriggerInfos.backLeft.Header.stamp = Com.kaTsLastHoming[byRcvID-ID_OFFSET];
+                    outtriggerInfos.backLeft.Header.stamp = Com.kaRxTsHoming[byRcvID-ID_OFFSET];
                     outtriggerInfos.backLeft.Homming = Com.kaHomingDone[byRcvID-ID_OFFSET];
                     break;
                 case OUTTRIGGER_BACK_RIGHT:
-                    outtriggerInfos.backRight.Header.stamp = Com.kaTsLastHoming[byRcvID-ID_OFFSET];
+                    outtriggerInfos.backRight.Header.stamp = Com.kaRxTsHoming[byRcvID-ID_OFFSET];
                     outtriggerInfos.backRight.Homming = Com.kaHomingDone[byRcvID-ID_OFFSET];
                     break;
                 default:
@@ -635,19 +675,19 @@ int MdReceiveProc(void) //save the identified serial data to defined variable ac
             #else
             switch(byRcvID-ID_OFFSET) {
                 case OUTTRIGGER_FRONT_LEFT:
-                    outtriggerInfos.frontLeft.header.stamp = Com.kaTsLastHoming[byRcvID-ID_OFFSET];
+                    outtriggerInfos.frontLeft.header.stamp = Com.kaRxTsHoming[byRcvID-ID_OFFSET];
                     outtriggerInfos.frontLeft.homing = Com.kaHomingDone[byRcvID-ID_OFFSET];
                     break;
                 case OUTTRIGGER_FRONT_RIGHT:
-                    outtriggerInfos.frontRight.header.stamp = Com.kaTsLastHoming[byRcvID-ID_OFFSET];
+                    outtriggerInfos.frontRight.header.stamp = Com.kaRxTsHoming[byRcvID-ID_OFFSET];
                     outtriggerInfos.frontRight.homing = Com.kaHomingDone[byRcvID-ID_OFFSET];
                     break;
                 case OUTTRIGGER_BACK_LEFT:
-                    outtriggerInfos.backLeft.header.stamp = Com.kaTsLastHoming[byRcvID-ID_OFFSET];
+                    outtriggerInfos.backLeft.header.stamp = Com.kaRxTsHoming[byRcvID-ID_OFFSET];
                     outtriggerInfos.backLeft.homing = Com.kaHomingDone[byRcvID-ID_OFFSET];
                     break;
                 case OUTTRIGGER_BACK_RIGHT:
-                    outtriggerInfos.backRight.header.stamp = Com.kaTsLastHoming[byRcvID-ID_OFFSET];
+                    outtriggerInfos.backRight.header.stamp = Com.kaRxTsHoming[byRcvID-ID_OFFSET];
                     outtriggerInfos.backRight.homing = Com.kaHomingDone[byRcvID-ID_OFFSET];
                     break;
                 default:
@@ -661,7 +701,8 @@ int MdReceiveProc(void) //save the identified serial data to defined variable ac
             break;
         // 모터 드라이버를 위한 데이터
         case PID_MAIN_DATA: //193
-            Com.kaTsLast[byRcvID-ID_OFFSET] = ros::Time::now();
+            Com.kaRxTsMainOld[byRcvID-ID_OFFSET] = Com.kaRxTsMain[byRcvID-ID_OFFSET];
+            Com.kaRxTsMain[byRcvID-ID_OFFSET] = ros::Time::now();
             
             kaspeed                                     = Byte2Short(Com.byRcvBuf[5], Com.byRcvBuf[6]);
             kacurrent                                   = Byte2Short(Com.byRcvBuf[7], Com.byRcvBuf[8]);
@@ -695,7 +736,7 @@ int MdReceiveProc(void) //save the identified serial data to defined variable ac
             #ifdef KIRO_MSG
             switch(byRcvID-ID_OFFSET) {
                 case OUTTRIGGER_FRONT_LEFT:
-                    outtriggerStates.frontLeft.header.stamp = Com.kaTsLast[byRcvID-ID_OFFSET];
+                    outtriggerStates.frontLeft.header.stamp = Com.kaRxTsMain[byRcvID-ID_OFFSET];
                     outtriggerStates.frontLeft.id = byRcvID;
                     outtriggerStates.frontLeft.rpm = Com.kaSpeed[byRcvID-ID_OFFSET];
                     outtriggerStates.frontLeft.ampere = Com.kaCurrent[byRcvID-ID_OFFSET];
@@ -732,7 +773,7 @@ int MdReceiveProc(void) //save the identified serial data to defined variable ac
                     }
                     break;
                 case OUTTRIGGER_FRONT_RIGHT:
-                    outtriggerStates.frontRight.header.stamp = Com.kaTsLast[byRcvID-ID_OFFSET];
+                    outtriggerStates.frontRight.header.stamp = Com.kaRxTsMain[byRcvID-ID_OFFSET];
                     outtriggerStates.frontRight.id = byRcvID;
                     outtriggerStates.frontRight.rpm = Com.kaSpeed[byRcvID-ID_OFFSET];
                     outtriggerStates.frontRight.ampere = Com.kaCurrent[byRcvID-ID_OFFSET];
@@ -769,7 +810,7 @@ int MdReceiveProc(void) //save the identified serial data to defined variable ac
                     }
                     break;
                 case OUTTRIGGER_BACK_LEFT:
-                    outtriggerStates.backLeft.header.stamp = Com.kaTsLast[byRcvID-ID_OFFSET];
+                    outtriggerStates.backLeft.header.stamp = Com.kaRxTsMain[byRcvID-ID_OFFSET];
                     outtriggerStates.backLeft.id = byRcvID;
                     outtriggerStates.backLeft.rpm = Com.kaSpeed[byRcvID-ID_OFFSET];
                     outtriggerStates.backLeft.ampere = Com.kaCurrent[byRcvID-ID_OFFSET];
@@ -806,7 +847,7 @@ int MdReceiveProc(void) //save the identified serial data to defined variable ac
                     }
                     break;
                 case OUTTRIGGER_BACK_RIGHT:
-                    outtriggerStates.backRight.header.stamp = Com.kaTsLast[byRcvID-ID_OFFSET];
+                    outtriggerStates.backRight.header.stamp = Com.kaRxTsMain[byRcvID-ID_OFFSET];
                     outtriggerStates.backRight.id = byRcvID;
                     outtriggerStates.backRight.rpm = Com.kaSpeed[byRcvID-ID_OFFSET];
                     outtriggerStates.backRight.ampere = Com.kaCurrent[byRcvID-ID_OFFSET];
@@ -848,7 +889,7 @@ int MdReceiveProc(void) //save the identified serial data to defined variable ac
             #else
             switch(byRcvID-ID_OFFSET) {
                 case OUTTRIGGER_FRONT_LEFT:
-                    outtriggerStates.frontLeft.header.stamp = Com.kaTsLast[byRcvID-ID_OFFSET];
+                    outtriggerStates.frontLeft.header.stamp = Com.kaRxTsMain[byRcvID-ID_OFFSET];
                     outtriggerStates.frontLeft.id = byRcvID;
                     outtriggerStates.frontLeft.rpm = Com.kaSpeed[byRcvID-ID_OFFSET];
                     outtriggerStates.frontLeft.ampere = Com.kaCurrent[byRcvID-ID_OFFSET];
@@ -885,7 +926,7 @@ int MdReceiveProc(void) //save the identified serial data to defined variable ac
                     }
                     break;
                 case OUTTRIGGER_FRONT_RIGHT:
-                    outtriggerStates.frontRight.header.stamp = Com.kaTsLast[byRcvID-ID_OFFSET];
+                    outtriggerStates.frontRight.header.stamp = Com.kaRxTsMain[byRcvID-ID_OFFSET];
                     outtriggerStates.frontRight.id = byRcvID;
                     outtriggerStates.frontRight.rpm = Com.kaSpeed[byRcvID-ID_OFFSET];
                     outtriggerStates.frontRight.ampere = Com.kaCurrent[byRcvID-ID_OFFSET];
@@ -922,7 +963,7 @@ int MdReceiveProc(void) //save the identified serial data to defined variable ac
                     }
                     break;
                 case OUTTRIGGER_BACK_LEFT:
-                    outtriggerStates.backLeft.header.stamp = Com.kaTsLast[byRcvID-ID_OFFSET];
+                    outtriggerStates.backLeft.header.stamp = Com.kaRxTsMain[byRcvID-ID_OFFSET];
                     outtriggerStates.backLeft.id = byRcvID;
                     outtriggerStates.backLeft.rpm = Com.kaSpeed[byRcvID-ID_OFFSET];
                     outtriggerStates.backLeft.ampere = Com.kaCurrent[byRcvID-ID_OFFSET];
@@ -959,7 +1000,7 @@ int MdReceiveProc(void) //save the identified serial data to defined variable ac
                     }
                     break;
                 case OUTTRIGGER_BACK_RIGHT:
-                    outtriggerStates.backRight.header.stamp = Com.kaTsLast[byRcvID-ID_OFFSET];
+                    outtriggerStates.backRight.header.stamp = Com.kaRxTsMain[byRcvID-ID_OFFSET];
                     outtriggerStates.backRight.id = byRcvID;
                     outtriggerStates.backRight.rpm = Com.kaSpeed[byRcvID-ID_OFFSET];
                     outtriggerStates.backRight.ampere = Com.kaCurrent[byRcvID-ID_OFFSET];
@@ -1049,7 +1090,7 @@ int MdReceiveProc(void) //save the identified serial data to defined variable ac
             break;
         // 모터 드라이버를 위한 데이터
         case PID_IO_MONITOR: //194
-            Com.kaTsLastIo[byRcvID-ID_OFFSET] = ros::Time::now();
+            Com.kaRxTsIo[byRcvID-ID_OFFSET] = ros::Time::now();
             
             kaspeed = Byte2Short(Com.byRcvBuf[5], Com.byRcvBuf[6]);
             Com.kaSpeed[byRcvID-ID_OFFSET] = kaspeed * inv_motor_in_arr[byRcvID-ID_OFFSET];

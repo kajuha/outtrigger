@@ -22,6 +22,30 @@
 
 #include <ros/ros.h>
 
+#include "outtrigger/MotorInfo.h"
+
+ros::Time ts_now;
+void getMotorInfo(int rate, ros::Publisher pub_motor_info) {
+  ros::Rate r(rate);
+  outtrigger::MotorInfo msg;
+
+  while (ros::ok())
+  {
+    ts_now = ros::Time::now();
+
+    msg.fl.tx = Com.kaTxTsMain[OUTTRIGGER_FRONT_LEFT].toSec();
+    msg.fl.tx_diff = Com.kaTxTsMain[OUTTRIGGER_FRONT_LEFT].toSec() - Com.kaTxTsMainOld[OUTTRIGGER_FRONT_LEFT].toSec();
+    msg.fl.rx = Com.kaRxTsMain[OUTTRIGGER_FRONT_LEFT].toSec();
+    msg.fl.rx_diff = Com.kaRxTsMain[OUTTRIGGER_FRONT_LEFT].toSec() - Com.kaRxTsMainOld[OUTTRIGGER_FRONT_LEFT].toSec();
+    msg.fl.txrx_diff = msg.fl.rx - msg.fl.tx;
+
+    msg.header.stamp = ros::Time::now();
+    pub_motor_info.publish(msg);
+
+    r.sleep();
+  }
+}
+
 int MOTOR_NUM;
 double GEAR_RATIO;
 double MOTOR_TICK;
@@ -34,6 +58,8 @@ double MIN_MM_PER_SEC;
 double MAX_MM_PER_SEC;
 std::vector<double> inv_motor_in_arr;
 std::vector<double> inv_encoder_out_arr;
+int override_homing;
+int motor_info_hz;
 
 Communication Com;
 
@@ -152,7 +178,11 @@ void pidPositionCallback(const outtrigger::PidPosition& pidPosition) {
     // 모터 위치 이동
     comData.type = MD_CMD_PID;
     comData.id = pidPosition.id;
+    #if MDROBOT_PNT_ENABLE
     comData.pid = PID_PNT_POS_VEL_CMD;
+    #else
+    comData.pid = PID_POSI_VEL_CMD;
+    #endif
     comData.position = pidPosition.position;
     comData.rpm = pidPosition.rpm;
     qarr.push(comData);
@@ -486,7 +516,11 @@ void commandsCallback(const outtrigger::Commands& commands) {
                 if (info[i].homing) {
                     comData.type = MD_CMD_PID;
                     comData.id = motor_id;
+                    #if MDROBOT_PNT_ENABLE
                     comData.pid = PID_PNT_POS_VEL_CMD;
+                    #else
+                    comData.pid = PID_POSI_VEL_CMD;
+                    #endif
 
                     mm_sec_in = command[i].mm_per_sec;   // 10 mm/s = 1200 rpm
                     if (mm_sec_in < 0.0) { 
@@ -526,7 +560,11 @@ void commandsCallback(const outtrigger::Commands& commands) {
                 if (info[i].homing) {
                     comData.type = MD_CMD_PID;
                     comData.id = motor_id;
+                    #if MDROBOT_PNT_ENABLE
                     comData.pid = PID_PNT_POS_VEL_CMD;
+                    #else
+                    comData.pid = PID_POSI_VEL_CMD;
+                    #endif
 
                     mm_in = command[i].mm;
 
@@ -552,28 +590,32 @@ void commandsCallback(const outtrigger::Commands& commands) {
 
                 break;
             case HOMING:
-                comData.type = MD_CMD_INIT;
-                comData.id = motor_id;
-                comData.pid = PID_COMMAND;
-                comData.nArray[0] = PID_CMD_INIT_SET2;
-                qarr.push(comData);
+                if (!override_homing) {
+	                comData.type = MD_CMD_INIT;
+	                comData.id = motor_id;
+	                comData.pid = PID_COMMAND;
+	                comData.nArray[0] = PID_CMD_INIT_SET2;
+	                qarr.push(comData);
 
-                switch (i) {
-                    case OUTTRIGGER_FRONT_LEFT:
-                        outtriggerInfos.frontLeft.state = 0;
-                        break;
-                    case OUTTRIGGER_FRONT_RIGHT:
-                        outtriggerInfos.frontRight.state = 0;
-                        break;
-                    case OUTTRIGGER_BACK_LEFT:
-                        outtriggerInfos.backLeft.state = 0;
-                        break;
-                    case OUTTRIGGER_BACK_RIGHT:
-                        outtriggerInfos.backRight.state = 0;
-                        break;
-                    default:
-                        printf("unknown homing id: %d\n", i);
-                        break;
+	                switch (i) {
+	                    case OUTTRIGGER_FRONT_LEFT:
+	                        outtriggerInfos.frontLeft.state = 0;
+	                        break;
+	                    case OUTTRIGGER_FRONT_RIGHT:
+	                        outtriggerInfos.frontRight.state = 0;
+	                        break;
+	                    case OUTTRIGGER_BACK_LEFT:
+	                        outtriggerInfos.backLeft.state = 0;
+	                        break;
+	                    case OUTTRIGGER_BACK_RIGHT:
+	                        outtriggerInfos.backRight.state = 0;
+	                        break;
+	                    default:
+	                        printf("unknown homing id: %d\n", i);
+	                        break;
+                    }
+                } else {
+                    printf("override[%d] homing mode!!!\n", i);
                 }
 
                 break;
@@ -618,7 +660,7 @@ void checkOuttrigger() {
     #if 0
     ts_now = ros::Time::now();
     for (int i=0; i<MOTOR_NUM; i++) {
-        timeout = ts_now.toSec() - Com.kaTsLast[i].toSec();
+        timeout = ts_now.toSec() - Com.kaRxTsMain[i].toSec();
         if (timeout > TIMEOUT_SEC_MAIN) {
             printf("invalid main data: #%d, timeout: %lf, SET_TIMEOUT: %lf\n", i, timeout, TIMEOUT_SEC_MAIN);
         }
@@ -628,7 +670,7 @@ void checkOuttrigger() {
     #if 0
     ts_now = ros::Time::now();
     for (int i=0; i<MOTOR_NUM; i++) {
-        timeout = ts_now.toSec() - Com.kaTsLastHoming[i].toSec();
+        timeout = ts_now.toSec() - Com.kaRxTsHoming[i].toSec();
         if (timeout > TIMEOUT_SEC_HOMING) {
             printf("invalid homing data: #%d, timeout: %lf, SET_TIMEOUT: %lf\n", i, timeout, TIMEOUT_SEC_HOMING);
         }
@@ -713,6 +755,8 @@ int main(int argc, char** argv)
     ros::param::get("~communication", com);
     ros::param::get("~inv_motor_in_arr", inv_motor_in_arr);
     ros::param::get("~inv_encoder_out_arr", inv_encoder_out_arr);
+    ros::param::get("~override_homing", override_homing);
+    ros::param::get("~motor_info_hz", motor_info_hz);
     #else
     nh.getParam("MOTOR_NUM", MOTOR_NUM);
     nh.getParam("GEAR_RATIO", GEAR_RATIO);
@@ -728,6 +772,8 @@ int main(int argc, char** argv)
     nh.getParam("communication", com);
     nh.getParam("inv_motor_in_arr", inv_motor_in_arr);
     nh.getParam("inv_encoder_out_arr", inv_encoder_out_arr);
+    nh.getParam("override_homing", override_homing);
+    nh.getParam("motor_info_hz", motor_info_hz);
     #endif
 
     #if 0
@@ -839,12 +885,18 @@ int main(int argc, char** argv)
 
     ros::Rate r(main_hz);
 
+    ros::Publisher pub_motor_info = nh.advertise<outtrigger::MotorInfo>("motor_info", 100);
+    boost::thread threadGetMotorInfo(getMotorInfo, motor_info_hz, pub_motor_info);
+	
     ros::Time ts_now;
 
     ts_now = ros::Time::now();
     for (int i=0; i<MOTOR_NUM; i++) {
-        Com.kaTsLast[i] = ts_now;
-        Com.kaTsLastIo[i] = ts_now;
+        Com.kaTxTsMainOld[i] = ts_now;
+        Com.kaTxTsMain[i] = ts_now;
+        Com.kaRxTsMainOld[i] = ts_now;
+        Com.kaRxTsMain[i] = ts_now;
+        Com.kaRxTsIo[i] = ts_now;
     }
 
     while(ros::ok())
@@ -935,6 +987,7 @@ int main(int argc, char** argv)
         r.sleep();
     }
 
+    threadGetMotorInfo.join();
     threadSendMsgMd1k.join();
 
     #if 1

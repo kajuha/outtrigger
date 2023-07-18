@@ -16,6 +16,8 @@
     <arg name="baudrate" default="19200" doc="baudrate"/>
     <arg name="inv_motor_in_arr" default="[1.0, 1.0, 1.0, 1.0]" doc="inv_motor_in_arr"/>
     <arg name="inv_encoder_out_arr" default="[1.0, 1.0, 1.0, 1.0]" doc="inv_encoder_out_arr"/>
+    <arg name="override_homing" default="0" doc="override_homing"/>
+    <arg name="motor_info_hz" default="1000" doc="motor_info_hz"/>
     
     <node pkg="outtrigger" type="outtrigger" name="outtrigger" output="$(arg message_display)">
         <param name = "serial_port"      value = "$(arg serial_port)"/>
@@ -41,5 +43,7 @@
         <param name="communication" value="$(arg communication)"/>
         <rosparam param="inv_motor_in_arr" subst_value="true">$(arg inv_motor_in_arr)</rosparam>
         <rosparam param="inv_encoder_out_arr" subst_value="true">$(arg inv_encoder_out_arr)</rosparam>
+        <param name="override_homing" value="$(arg override_homing)"/>
+        <param name="motor_info_hz" value="$(arg motor_info_hz)"/>
     </node>
 </launch>

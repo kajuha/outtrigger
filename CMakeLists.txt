@@ -73,6 +73,8 @@ add_message_files(
   Commands.msg
   Infos.msg
   States.msg
+  MotorTs.msg
+  MotorInfo.msg
 )
 
 ## Generate services in the 'srv' folder

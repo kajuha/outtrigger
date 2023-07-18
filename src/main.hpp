@@ -21,6 +21,8 @@ extern outtrigger::States outtriggerStates;
 extern int MOTOR_NUM;
 extern std::vector<double> inv_motor_in_arr;
 extern std::vector<double> inv_encoder_out_arr;
+extern int override_homing;
+extern int motor_info_hz;
 
 extern double GEAR_RATIO;
 extern double MOTOR_TICK;

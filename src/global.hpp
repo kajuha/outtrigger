@@ -17,6 +17,8 @@
 
 using namespace std;
 
+#define MDROBOT_PNT_ENABLE 0
+
 #if 1
 #define ID_OFFSET  21
 #else
