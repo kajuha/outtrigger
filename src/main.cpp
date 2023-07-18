@@ -39,6 +39,24 @@ void getMotorInfo(int rate, ros::Publisher pub_motor_info) {
     msg.fl.rx_diff = Com.kaRxTsMain[OUTTRIGGER_FRONT_LEFT].toSec() - Com.kaRxTsMainOld[OUTTRIGGER_FRONT_LEFT].toSec();
     msg.fl.txrx_diff = msg.fl.rx - msg.fl.tx;
 
+    msg.fr.tx = Com.kaTxTsMain[OUTTRIGGER_FRONT_RIGHT].toSec();
+    msg.fr.tx_diff = Com.kaTxTsMain[OUTTRIGGER_FRONT_RIGHT].toSec() - Com.kaTxTsMainOld[OUTTRIGGER_FRONT_RIGHT].toSec();
+    msg.fr.rx = Com.kaRxTsMain[OUTTRIGGER_FRONT_RIGHT].toSec();
+    msg.fr.rx_diff = Com.kaRxTsMain[OUTTRIGGER_FRONT_RIGHT].toSec() - Com.kaRxTsMainOld[OUTTRIGGER_FRONT_RIGHT].toSec();
+    msg.fr.txrx_diff = msg.fr.rx - msg.fr.tx;
+
+    msg.bl.tx = Com.kaTxTsMain[OUTTRIGGER_BACK_LEFT].toSec();
+    msg.bl.tx_diff = Com.kaTxTsMain[OUTTRIGGER_BACK_LEFT].toSec() - Com.kaTxTsMainOld[OUTTRIGGER_BACK_LEFT].toSec();
+    msg.bl.rx = Com.kaRxTsMain[OUTTRIGGER_BACK_LEFT].toSec();
+    msg.bl.rx_diff = Com.kaRxTsMain[OUTTRIGGER_BACK_LEFT].toSec() - Com.kaRxTsMainOld[OUTTRIGGER_BACK_LEFT].toSec();
+    msg.bl.txrx_diff = msg.bl.rx - msg.bl.tx;
+
+    msg.br.tx = Com.kaTxTsMain[OUTTRIGGER_BACK_RIGHT].toSec();
+    msg.br.tx_diff = Com.kaTxTsMain[OUTTRIGGER_BACK_RIGHT].toSec() - Com.kaTxTsMainOld[OUTTRIGGER_BACK_RIGHT].toSec();
+    msg.br.rx = Com.kaRxTsMain[OUTTRIGGER_BACK_RIGHT].toSec();
+    msg.br.rx_diff = Com.kaRxTsMain[OUTTRIGGER_BACK_RIGHT].toSec() - Com.kaRxTsMainOld[OUTTRIGGER_BACK_RIGHT].toSec();
+    msg.br.txrx_diff = msg.br.rx - msg.br.tx;
+
     msg.header.stamp = ros::Time::now();
     pub_motor_info.publish(msg);
 
