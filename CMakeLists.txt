@@ -1,6 +1,12 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(outtrigger)
 
+set(KIRO_MSG TRUE)
+# set(KIRO_MSG FALSE)
+if(${KIRO_MSG})
+  add_definitions(-DKIRO_MSG)
+endif()
+
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
 
@@ -67,6 +73,8 @@ add_message_files(
   Commands.msg
   Infos.msg
   States.msg
+  MotorTs.msg
+  MotorInfo.msg
 )
 
 ## Generate services in the 'srv' folder

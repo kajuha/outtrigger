@@ -43,6 +43,7 @@
 // #define PID_PNT_BRAKE       175  // DEPRECATED
 #define PID_PNT_POS_VEL_CMD 206
 #define PID_PNT_VEL_CMD     207
+#define PID_POSI_VEL_CMD 219
 #define PID_MAIN_DATA       193
 #define PID_IO_MONITOR      194
 // #define PID_PNT_MAIN_DATA   210  // DEPRECATED
@@ -134,9 +135,12 @@ class Communication {
     std::vector<int> kaPosition;
     std::vector<BYTE> kaBrake;
     std::vector<BYTE> kaTemp;
-    std::vector<ros::Time> kaTsLast;
-    std::vector<ros::Time> kaTsLastIo;
-    std::vector<ros::Time> kaTsLastHoming;
+    std::vector<ros::Time> kaTxTsMainOld;
+    std::vector<ros::Time> kaTxTsMain;
+    std::vector<ros::Time> kaRxTsMainOld;
+    std::vector<ros::Time> kaRxTsMain;
+    std::vector<ros::Time> kaRxTsIo;
+    std::vector<ros::Time> kaRxTsHoming;
     std::vector<int> kaSetPosition;
     std::vector<BYTE> kaStatus2;
     std::vector<BYTE> kaCtrlInput;
@@ -166,9 +170,12 @@ class Communication {
         kaPosition = std::vector<int>(motor_num);
         kaBrake = std::vector<BYTE>(motor_num);
         kaTemp = std::vector<BYTE>(motor_num);
-        kaTsLast = std::vector<ros::Time>(motor_num);
-        kaTsLastIo = std::vector<ros::Time>(motor_num);
-        kaTsLastHoming = std::vector<ros::Time>(motor_num);
+        kaTxTsMainOld = std::vector<ros::Time>(motor_num);
+        kaTxTsMain = std::vector<ros::Time>(motor_num);
+        kaRxTsMainOld = std::vector<ros::Time>(motor_num);
+        kaRxTsMain = std::vector<ros::Time>(motor_num);
+        kaRxTsIo = std::vector<ros::Time>(motor_num);
+        kaRxTsHoming = std::vector<ros::Time>(motor_num);
         kaSetPosition = std::vector<int>(motor_num);
         kaStatus2 = std::vector<BYTE>(motor_num);
         kaCtrlInput = std::vector<BYTE>(motor_num);

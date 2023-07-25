@@ -180,6 +180,10 @@ int PutMdData(BYTE byPID, BYTE byMID, ComData comData)
             #endif
 
             ser.write(Com.bySndBuf, byPidDataSize);
+            if (comData.nArray[0] == PID_MAIN_DATA) {
+                Com.kaTxTsMainOld[comData.id-ID_OFFSET] = Com.kaTxTsMain[comData.id-ID_OFFSET];
+                Com.kaTxTsMain[comData.id-ID_OFFSET] = ros::Time::now();
+            }
 
             break;
 		// 데이터 요청
@@ -385,6 +389,38 @@ int PutMdData(BYTE byPID, BYTE byMID, ComData comData)
             Com.bySndBuf[17] = 0;
             Com.bySndBuf[18] = 0;
             Com.bySndBuf[19] = REQUEST_PNT_MAIN_DATA;
+
+            for(i = 0; i < (byPidDataSize-1); i++) byTempDataSum += Com.bySndBuf[i];
+            Com.bySndBuf[byPidDataSize-1] = ~(byTempDataSum) + 1; //check sum
+
+            #if 0
+            printf("send: ");
+            for (int idx=0; idx<byPidDataSize; idx++) {
+                printf("%02x ", Com.bySndBuf[idx]);
+            }
+            printf("\n");
+            #endif
+
+            ser.write(Com.bySndBuf, byPidDataSize);
+
+            break;
+        case PID_POSI_VEL_CMD:
+
+            byDataSize    = 6;
+            byPidDataSize = 12;
+            byTempDataSum = 0;
+
+            iData = Short2Byte((short)comData.rpm);
+
+            Com.bySndBuf[4]  = byDataSize;
+            pPosition = (char*)&comData.position;
+            Com.bySndBuf[5]  = pPosition[0];
+            Com.bySndBuf[6]  = pPosition[1];
+            Com.bySndBuf[7]  = pPosition[2];
+            Com.bySndBuf[8]  = pPosition[3];
+            pRpm = (char*)&comData.rpm;
+            Com.bySndBuf[9]  = pRpm[0];
+            Com.bySndBuf[10]  = pRpm[1];
 
             for(i = 0; i < (byPidDataSize-1); i++) byTempDataSum += Com.bySndBuf[i];
             Com.bySndBuf[byPidDataSize-1] = ~(byTempDataSum) + 1; //check sum
@@ -608,25 +644,50 @@ int MdReceiveProc(void) //save the identified serial data to defined variable ac
         #endif
         // 모터 드라이버를 위한 데이터
         case PID_INIT_SET_OK: //87
-            Com.kaTsLastHoming[byRcvID-ID_OFFSET] = ros::Time::now();
+            Com.kaRxTsHoming[byRcvID-ID_OFFSET] = ros::Time::now();
+            #if 0
             Com.kaHomingDone[byRcvID-ID_OFFSET] = Com.byRcvBuf[5];
+            #else
+            Com.kaHomingDone[byRcvID-ID_OFFSET] = Com.byRcvBuf[5] + override_homing;
+            #endif
 
-            #if 1
+            #ifdef KIRO_MSG
             switch(byRcvID-ID_OFFSET) {
                 case OUTTRIGGER_FRONT_LEFT:
-                    outtriggerInfos.frontLeft.header.stamp = Com.kaTsLastHoming[byRcvID-ID_OFFSET];
+                    outtriggerInfos.frontLeft.Header.stamp = Com.kaRxTsHoming[byRcvID-ID_OFFSET];
+                    outtriggerInfos.frontLeft.Homming = Com.kaHomingDone[byRcvID-ID_OFFSET];
+                    break;
+                case OUTTRIGGER_FRONT_RIGHT:
+                    outtriggerInfos.frontRight.Header.stamp = Com.kaRxTsHoming[byRcvID-ID_OFFSET];
+                    outtriggerInfos.frontRight.Homming = Com.kaHomingDone[byRcvID-ID_OFFSET];
+                    break;
+                case OUTTRIGGER_BACK_LEFT:
+                    outtriggerInfos.backLeft.Header.stamp = Com.kaRxTsHoming[byRcvID-ID_OFFSET];
+                    outtriggerInfos.backLeft.Homming = Com.kaHomingDone[byRcvID-ID_OFFSET];
+                    break;
+                case OUTTRIGGER_BACK_RIGHT:
+                    outtriggerInfos.backRight.Header.stamp = Com.kaRxTsHoming[byRcvID-ID_OFFSET];
+                    outtriggerInfos.backRight.Homming = Com.kaHomingDone[byRcvID-ID_OFFSET];
+                    break;
+                default:
+                    break;
+            }
+            #else
+            switch(byRcvID-ID_OFFSET) {
+                case OUTTRIGGER_FRONT_LEFT:
+                    outtriggerInfos.frontLeft.header.stamp = Com.kaRxTsHoming[byRcvID-ID_OFFSET];
                     outtriggerInfos.frontLeft.homing = Com.kaHomingDone[byRcvID-ID_OFFSET];
                     break;
                 case OUTTRIGGER_FRONT_RIGHT:
-                    outtriggerInfos.frontRight.header.stamp = Com.kaTsLastHoming[byRcvID-ID_OFFSET];
+                    outtriggerInfos.frontRight.header.stamp = Com.kaRxTsHoming[byRcvID-ID_OFFSET];
                     outtriggerInfos.frontRight.homing = Com.kaHomingDone[byRcvID-ID_OFFSET];
                     break;
                 case OUTTRIGGER_BACK_LEFT:
-                    outtriggerInfos.backLeft.header.stamp = Com.kaTsLastHoming[byRcvID-ID_OFFSET];
+                    outtriggerInfos.backLeft.header.stamp = Com.kaRxTsHoming[byRcvID-ID_OFFSET];
                     outtriggerInfos.backLeft.homing = Com.kaHomingDone[byRcvID-ID_OFFSET];
                     break;
                 case OUTTRIGGER_BACK_RIGHT:
-                    outtriggerInfos.backRight.header.stamp = Com.kaTsLastHoming[byRcvID-ID_OFFSET];
+                    outtriggerInfos.backRight.header.stamp = Com.kaRxTsHoming[byRcvID-ID_OFFSET];
                     outtriggerInfos.backRight.homing = Com.kaHomingDone[byRcvID-ID_OFFSET];
                     break;
                 default:
@@ -640,7 +701,8 @@ int MdReceiveProc(void) //save the identified serial data to defined variable ac
             break;
         // 모터 드라이버를 위한 데이터
         case PID_MAIN_DATA: //193
-            Com.kaTsLast[byRcvID-ID_OFFSET] = ros::Time::now();
+            Com.kaRxTsMainOld[byRcvID-ID_OFFSET] = Com.kaRxTsMain[byRcvID-ID_OFFSET];
+            Com.kaRxTsMain[byRcvID-ID_OFFSET] = ros::Time::now();
             
             kaspeed                                     = Byte2Short(Com.byRcvBuf[5], Com.byRcvBuf[6]);
             kacurrent                                   = Byte2Short(Com.byRcvBuf[7], Com.byRcvBuf[8]);
@@ -671,10 +733,163 @@ int MdReceiveProc(void) //save the identified serial data to defined variable ac
             static double mm_out;
             static double mm_sec_out;
             
-            #if 1
+            #ifdef KIRO_MSG
             switch(byRcvID-ID_OFFSET) {
                 case OUTTRIGGER_FRONT_LEFT:
-                    outtriggerStates.frontLeft.header.stamp = Com.kaTsLast[byRcvID-ID_OFFSET];
+                    outtriggerStates.frontLeft.header.stamp = Com.kaRxTsMain[byRcvID-ID_OFFSET];
+                    outtriggerStates.frontLeft.id = byRcvID;
+                    outtriggerStates.frontLeft.rpm = Com.kaSpeed[byRcvID-ID_OFFSET];
+                    outtriggerStates.frontLeft.ampere = Com.kaCurrent[byRcvID-ID_OFFSET];
+                    outtriggerStates.frontLeft.controlType = Com.kaType[byRcvID-ID_OFFSET];
+                    outtriggerStates.frontLeft.refRpm = Com.kaRefSpeed[byRcvID-ID_OFFSET];
+                    outtriggerStates.frontLeft.ctrlOutput = Com.kaCtrlOutput[byRcvID-ID_OFFSET];
+                    outtriggerStates.frontLeft.condition1 = Com.kaStatus1[byRcvID-ID_OFFSET];
+                    outtriggerStates.frontLeft.position = Com.kaPosition[byRcvID-ID_OFFSET];
+                    outtriggerStates.frontLeft.brake = Com.kaBrake[byRcvID-ID_OFFSET];
+                    outtriggerStates.frontLeft.temperature = Com.kaTemp[byRcvID-ID_OFFSET];
+                    outtriggerStates.frontLeft.condition2 = Com.kaStatus2[byRcvID-ID_OFFSET];
+
+                    mm_out = 0.0;
+                    mm_out = outtriggerStates.frontLeft.position / MOTOR_TICK / GEAR_RATIO * SCREW_LEAD;
+                    outtriggerInfos.frontLeft.Position = mm_out;
+                    mm_sec_out = 0.0;
+                    mm_sec_out = outtriggerStates.frontLeft.rpm / GEAR_RATIO * SCREW_LEAD / MIN_TO_SEC;
+                    outtriggerInfos.frontLeft.Velocity = mm_sec_out;
+                    #if 0
+                    printf("[out] mm: %7.3f, mm_sec: %7.3f\n", mm_out, mm_sec_out);
+                    #endif
+
+                    if (outtriggerStates.frontLeft.condition1) {
+                        outtriggerInfos.frontLeft.State = 1;
+                        printf("[%lf]outtriggerStates.frontLeft.condition1 error : 0x%02x\n", outtriggerStates.frontLeft.header.stamp.toSec(), outtriggerStates.frontLeft.condition1);
+                        printf("outtriggerStates.frontLeft.condition1 error list\n");
+                        for (int i=0; i<STATUS1_BIT_LEN; i++) {
+                            if ((outtriggerStates.frontLeft.condition1 >> i) & 0x01) {
+                                printf("%s, ", STATUS_ERROR[i]);
+                            }
+                        }
+                        printf("\n");
+                    } else {
+                    }
+                    break;
+                case OUTTRIGGER_FRONT_RIGHT:
+                    outtriggerStates.frontRight.header.stamp = Com.kaRxTsMain[byRcvID-ID_OFFSET];
+                    outtriggerStates.frontRight.id = byRcvID;
+                    outtriggerStates.frontRight.rpm = Com.kaSpeed[byRcvID-ID_OFFSET];
+                    outtriggerStates.frontRight.ampere = Com.kaCurrent[byRcvID-ID_OFFSET];
+                    outtriggerStates.frontRight.controlType = Com.kaType[byRcvID-ID_OFFSET];
+                    outtriggerStates.frontRight.refRpm = Com.kaRefSpeed[byRcvID-ID_OFFSET];
+                    outtriggerStates.frontRight.ctrlOutput = Com.kaCtrlOutput[byRcvID-ID_OFFSET];
+                    outtriggerStates.frontRight.condition1 = Com.kaStatus1[byRcvID-ID_OFFSET];
+                    outtriggerStates.frontRight.position = Com.kaPosition[byRcvID-ID_OFFSET];
+                    outtriggerStates.frontRight.brake = Com.kaBrake[byRcvID-ID_OFFSET];
+                    outtriggerStates.frontRight.temperature = Com.kaTemp[byRcvID-ID_OFFSET];
+                    outtriggerStates.frontRight.condition2 = Com.kaStatus2[byRcvID-ID_OFFSET];
+
+                    mm_out = 0.0;
+                    mm_out = outtriggerStates.frontRight.position / MOTOR_TICK / GEAR_RATIO * SCREW_LEAD;
+                    outtriggerInfos.frontRight.Position = mm_out;
+                    mm_sec_out = 0.0;
+                    mm_sec_out = outtriggerStates.frontRight.rpm / GEAR_RATIO * SCREW_LEAD / MIN_TO_SEC;
+                    outtriggerInfos.frontRight.Velocity = mm_sec_out;
+                    #if 0
+                    printf("[out] mm: %7.3f, mm_sec: %7.3f\n", mm_out, mm_sec_out);
+                    #endif
+
+                    if (outtriggerStates.frontRight.condition1) {
+                        outtriggerInfos.frontRight.State = 1;
+                        printf("[%lf]outtriggerStates.frontRight.condition1 error : 0x%02x\n", outtriggerStates.frontRight.header.stamp.toSec(), outtriggerStates.frontRight.condition1);
+                        printf("outtriggerStates.frontRight.condition1 error list\n");
+                        for (int i=0; i<STATUS1_BIT_LEN; i++) {
+                            if ((outtriggerStates.frontRight.condition1 >> i) & 0x01) {
+                                printf("%s, ", STATUS_ERROR[i]);
+                            }
+                        }
+                        printf("\n");
+                    } else {
+                    }
+                    break;
+                case OUTTRIGGER_BACK_LEFT:
+                    outtriggerStates.backLeft.header.stamp = Com.kaRxTsMain[byRcvID-ID_OFFSET];
+                    outtriggerStates.backLeft.id = byRcvID;
+                    outtriggerStates.backLeft.rpm = Com.kaSpeed[byRcvID-ID_OFFSET];
+                    outtriggerStates.backLeft.ampere = Com.kaCurrent[byRcvID-ID_OFFSET];
+                    outtriggerStates.backLeft.controlType = Com.kaType[byRcvID-ID_OFFSET];
+                    outtriggerStates.backLeft.refRpm = Com.kaRefSpeed[byRcvID-ID_OFFSET];
+                    outtriggerStates.backLeft.ctrlOutput = Com.kaCtrlOutput[byRcvID-ID_OFFSET];
+                    outtriggerStates.backLeft.condition1 = Com.kaStatus1[byRcvID-ID_OFFSET];
+                    outtriggerStates.backLeft.position = Com.kaPosition[byRcvID-ID_OFFSET];
+                    outtriggerStates.backLeft.brake = Com.kaBrake[byRcvID-ID_OFFSET];
+                    outtriggerStates.backLeft.temperature = Com.kaTemp[byRcvID-ID_OFFSET];
+                    outtriggerStates.backLeft.condition2 = Com.kaStatus2[byRcvID-ID_OFFSET];
+
+                    mm_out = 0.0;
+                    mm_out = outtriggerStates.backLeft.position / MOTOR_TICK / GEAR_RATIO * SCREW_LEAD;
+                    outtriggerInfos.backLeft.Position = mm_out;
+                    mm_sec_out = 0.0;
+                    mm_sec_out = outtriggerStates.backLeft.rpm / GEAR_RATIO * SCREW_LEAD / MIN_TO_SEC;
+                    outtriggerInfos.backLeft.Velocity = mm_sec_out;
+                    #if 0
+                    printf("[out] mm: %7.3f, mm_sec: %7.3f\n", mm_out, mm_sec_out);
+                    #endif
+
+                    if (outtriggerStates.backLeft.condition1) {
+                        outtriggerInfos.backLeft.State = 1;
+                        printf("[%lf]outtriggerStates.backLeft.condition1 error : 0x%02x\n", outtriggerStates.backLeft.header.stamp.toSec(), outtriggerStates.backLeft.condition1);
+                        printf("outtriggerStates.backLeft.condition1 error list\n");
+                        for (int i=0; i<STATUS1_BIT_LEN; i++) {
+                            if ((outtriggerStates.backLeft.condition1 >> i) & 0x01) {
+                                printf("%s, ", STATUS_ERROR[i]);
+                            }
+                        }
+                        printf("\n");
+                    } else {
+                    }
+                    break;
+                case OUTTRIGGER_BACK_RIGHT:
+                    outtriggerStates.backRight.header.stamp = Com.kaRxTsMain[byRcvID-ID_OFFSET];
+                    outtriggerStates.backRight.id = byRcvID;
+                    outtriggerStates.backRight.rpm = Com.kaSpeed[byRcvID-ID_OFFSET];
+                    outtriggerStates.backRight.ampere = Com.kaCurrent[byRcvID-ID_OFFSET];
+                    outtriggerStates.backRight.controlType = Com.kaType[byRcvID-ID_OFFSET];
+                    outtriggerStates.backRight.refRpm = Com.kaRefSpeed[byRcvID-ID_OFFSET];
+                    outtriggerStates.backRight.ctrlOutput = Com.kaCtrlOutput[byRcvID-ID_OFFSET];
+                    outtriggerStates.backRight.condition1 = Com.kaStatus1[byRcvID-ID_OFFSET];
+                    outtriggerStates.backRight.position = Com.kaPosition[byRcvID-ID_OFFSET];
+                    outtriggerStates.backRight.brake = Com.kaBrake[byRcvID-ID_OFFSET];
+                    outtriggerStates.backRight.temperature = Com.kaTemp[byRcvID-ID_OFFSET];
+                    outtriggerStates.backRight.condition2 = Com.kaStatus2[byRcvID-ID_OFFSET];
+
+                    mm_out = 0.0;
+                    mm_out = outtriggerStates.backRight.position / MOTOR_TICK / GEAR_RATIO * SCREW_LEAD;
+                    outtriggerInfos.backRight.Position = mm_out;
+                    mm_sec_out = 0.0;
+                    mm_sec_out = outtriggerStates.backRight.rpm / GEAR_RATIO * SCREW_LEAD / MIN_TO_SEC;
+                    outtriggerInfos.backRight.Velocity = mm_sec_out;
+                    #if 0
+                    printf("[out] mm: %7.3f, mm_sec: %7.3f\n", mm_out, mm_sec_out);
+                    #endif
+
+                    if (outtriggerStates.backRight.condition1) {
+                        outtriggerInfos.backRight.State = 1;
+                        printf("[%lf]outtriggerStates.backRight.condition1 error : 0x%02x\n", outtriggerStates.backRight.header.stamp.toSec(), outtriggerStates.backRight.condition1);
+                        printf("outtriggerStates.backRight.condition1 error list\n");
+                        for (int i=0; i<STATUS1_BIT_LEN; i++) {
+                            if ((outtriggerStates.backRight.condition1 >> i) & 0x01) {
+                                printf("%s, ", STATUS_ERROR[i]);
+                            }
+                        }
+                        printf("\n");
+                    } else {
+                    }
+                    break;
+                default:
+                    break;
+            }
+            #else
+            switch(byRcvID-ID_OFFSET) {
+                case OUTTRIGGER_FRONT_LEFT:
+                    outtriggerStates.frontLeft.header.stamp = Com.kaRxTsMain[byRcvID-ID_OFFSET];
                     outtriggerStates.frontLeft.id = byRcvID;
                     outtriggerStates.frontLeft.rpm = Com.kaSpeed[byRcvID-ID_OFFSET];
                     outtriggerStates.frontLeft.ampere = Com.kaCurrent[byRcvID-ID_OFFSET];
@@ -711,7 +926,7 @@ int MdReceiveProc(void) //save the identified serial data to defined variable ac
                     }
                     break;
                 case OUTTRIGGER_FRONT_RIGHT:
-                    outtriggerStates.frontRight.header.stamp = Com.kaTsLast[byRcvID-ID_OFFSET];
+                    outtriggerStates.frontRight.header.stamp = Com.kaRxTsMain[byRcvID-ID_OFFSET];
                     outtriggerStates.frontRight.id = byRcvID;
                     outtriggerStates.frontRight.rpm = Com.kaSpeed[byRcvID-ID_OFFSET];
                     outtriggerStates.frontRight.ampere = Com.kaCurrent[byRcvID-ID_OFFSET];
@@ -748,7 +963,7 @@ int MdReceiveProc(void) //save the identified serial data to defined variable ac
                     }
                     break;
                 case OUTTRIGGER_BACK_LEFT:
-                    outtriggerStates.backLeft.header.stamp = Com.kaTsLast[byRcvID-ID_OFFSET];
+                    outtriggerStates.backLeft.header.stamp = Com.kaRxTsMain[byRcvID-ID_OFFSET];
                     outtriggerStates.backLeft.id = byRcvID;
                     outtriggerStates.backLeft.rpm = Com.kaSpeed[byRcvID-ID_OFFSET];
                     outtriggerStates.backLeft.ampere = Com.kaCurrent[byRcvID-ID_OFFSET];
@@ -785,7 +1000,7 @@ int MdReceiveProc(void) //save the identified serial data to defined variable ac
                     }
                     break;
                 case OUTTRIGGER_BACK_RIGHT:
-                    outtriggerStates.backRight.header.stamp = Com.kaTsLast[byRcvID-ID_OFFSET];
+                    outtriggerStates.backRight.header.stamp = Com.kaRxTsMain[byRcvID-ID_OFFSET];
                     outtriggerStates.backRight.id = byRcvID;
                     outtriggerStates.backRight.rpm = Com.kaSpeed[byRcvID-ID_OFFSET];
                     outtriggerStates.backRight.ampere = Com.kaCurrent[byRcvID-ID_OFFSET];
@@ -875,7 +1090,7 @@ int MdReceiveProc(void) //save the identified serial data to defined variable ac
             break;
         // 모터 드라이버를 위한 데이터
         case PID_IO_MONITOR: //194
-            Com.kaTsLastIo[byRcvID-ID_OFFSET] = ros::Time::now();
+            Com.kaRxTsIo[byRcvID-ID_OFFSET] = ros::Time::now();
             
             kaspeed = Byte2Short(Com.byRcvBuf[5], Com.byRcvBuf[6]);
             Com.kaSpeed[byRcvID-ID_OFFSET] = kaspeed * inv_motor_in_arr[byRcvID-ID_OFFSET];
@@ -1152,6 +1367,8 @@ int AnalyzeReceivedData(BYTE byArray[], BYTE byBufNum) //Analyze the communicati
                     Com.fgComDataChk = 1;
                     Com.byDataNum    = 0;
                     Com.byMaxDataNum = 0;
+                } else {
+                    printf("[ts:%lf] checksum error\n", ros::Time::now().toSec());
                 }
 
                 Com.byStep = 0;

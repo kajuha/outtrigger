@@ -5,14 +5,24 @@
 #include <math.h>
 
 #include <outtrigger/States.h>
+#ifdef KIRO_MSG
+#include <painting_robot_msg/OUTTRIGGER_State.h>
+#else
 #include <outtrigger/Infos.h>
+#endif
 
-extern outtrigger::States outtriggerStates;
+#ifdef KIRO_MSG
+extern painting_robot_msg::OUTTRIGGER_State outtriggerInfos;
+#else
 extern outtrigger::Infos outtriggerInfos;
+#endif
+extern outtrigger::States outtriggerStates;
 
 extern int MOTOR_NUM;
 extern std::vector<double> inv_motor_in_arr;
 extern std::vector<double> inv_encoder_out_arr;
+extern int override_homing;
+extern int motor_info_hz;
 
 extern double GEAR_RATIO;
 extern double MOTOR_TICK;
