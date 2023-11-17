@@ -127,7 +127,7 @@ class Communication {
     BYTE fgResetAlarm;
 
     std::vector<short> kaSpeed;
-    std::vector<WORD> kaCurrent;
+    std::vector<short> kaCurrent;
     std::vector<BYTE> kaType;
     std::vector<short> kaRefSpeed;
     std::vector<WORD> kaCtrlOutput;
@@ -162,7 +162,7 @@ class Communication {
 
     Communication(int motor_num) : byPacketNum(0) {
         kaSpeed = std::vector<short>(motor_num);
-        kaCurrent = std::vector<WORD>(motor_num);
+        kaCurrent = std::vector<short>(motor_num);
         kaType = std::vector<BYTE>(motor_num);
         kaRefSpeed = std::vector<short>(motor_num);
         kaCtrlOutput = std::vector<WORD>(motor_num);
